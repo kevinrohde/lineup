@@ -1,0 +1,3086 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2F6B45">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Weekly Lineup</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root{
+    --field:#2F6B45;
+    --field-dark:#1F4A30;
+    --dirt:#C9A66B;
+    --ball:#D6472C;
+    --ball-dark:#A83521;
+    --cream:#FBF6EC;
+    --ink:#1C2B24;
+    --ink-soft:#5B6E63;
+    --line:#DCD3BE;
+    --white:#FFFFFF;
+    /* text colors that sit ON the theme colors \u2014 recomputed for contrast when a team picks its own colors */
+    --on-field:#FBF6EC;
+    --on-field-dark:#FBF6EC;
+    --on-ball:#FBF6EC;
+    --on-ball-dark:#FBF6EC;
+    --ball-text:#D6472C;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;padding:0;}
+  #app{
+    font-family:'JetBrains Mono', monospace;
+    background:var(--cream);
+    color:var(--ink);
+    min-height:100vh;
+    padding:0 0 48px 0;
+  }
+  .scoreboard{
+    background:var(--field);
+    background-image:
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.04) 0 2px, transparent 2px 40px);
+    color:var(--on-field);
+    padding:22px 24px 18px;
+    border-bottom:6px solid var(--dirt);
+    position:relative;
+  }
+  .scoreboard h1{
+    font-family:'Oswald', sans-serif;
+    font-weight:700;
+    font-size:28px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    margin:0 0 2px 0;
+    line-height:1.1;
+    overflow-wrap:anywhere;
+  }
+  .brand{display:flex;align-items:center;gap:14px;min-width:0;}
+  .brand-logo{
+    height:68px;width:auto;max-width:150px;object-fit:contain;flex:none;
+    background:var(--cream);border-radius:12px;padding:5px;
+    box-shadow:0 1px 4px rgba(0,0,0,0.3);
+  }
+  .scoreboard .sub{
+    font-size:12px;
+    opacity:var(--sub-opacity, 0.85);
+    letter-spacing:0.5px;
+  }
+  .ball-icon{width:34px;height:34px;flex:none;}
+  .tabs{
+    display:flex;
+    gap:2px;
+    background:var(--field-dark);
+    padding:0 24px;
+  }
+  .tab{
+    font-family:'Oswald', sans-serif;
+    font-weight:600;
+    font-size:13px;
+    letter-spacing:0.5px;
+    text-transform:uppercase;
+    color:var(--on-field-dark);
+    opacity:0.6;
+    background:transparent;
+    border:none;
+    padding:12px 18px;
+    cursor:pointer;
+    border-bottom:3px solid transparent;
+  }
+  .tab.active{
+    opacity:1;
+    border-bottom:3px solid var(--ball);
+  }
+  .content{
+    max-width:980px;
+    margin:0 auto;
+    padding:28px 24px 0;
+  }
+  .card{
+    background:var(--white);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:20px 22px;
+    margin-bottom:20px;
+  }
+  .card h2{
+    font-family:'Oswald', sans-serif;
+    font-size:16px;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    margin:0 0 14px 0;
+    color:var(--field-dark);
+    border-bottom:2px solid var(--dirt);
+    padding-bottom:8px;
+  }
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  input[type=text], input[type=number]{
+    font-family:'JetBrains Mono', monospace;
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:8px 10px;
+    font-size:13px;
+    background:var(--cream);
+    color:var(--ink);
+  }
+  select{
+    font-family:'JetBrains Mono', monospace;
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:6px 8px;
+    font-size:12px;
+    background:var(--white);
+    color:var(--ink);
+    width:100%;
+  }
+  button{
+    font-family:'Oswald', sans-serif;
+    font-weight:600;
+    letter-spacing:0.3px;
+    text-transform:uppercase;
+    font-size:12px;
+    border:none;
+    border-radius:4px;
+    padding:9px 16px;
+    cursor:pointer;
+    background:var(--field);
+    color:var(--on-field);
+  }
+  button:hover{background:var(--field-dark);color:var(--on-field-dark);}
+  button.primary{background:var(--ball);color:var(--on-ball);}
+  button.primary:hover{background:var(--ball-dark);color:var(--on-ball-dark);}
+  button.ghost{background:transparent;color:var(--field-dark);border:1px solid var(--field);}
+  button.ghost:hover{background:var(--field);color:var(--on-field);}
+  button.small{padding:4px 8px;font-size:11px;}
+  button:disabled{opacity:0.4;cursor:not-allowed;}
+  table{width:100%;border-collapse:collapse;font-size:12px;}
+  th,td{border:1px solid var(--line);padding:6px 8px;text-align:center;}
+  th{background:var(--dirt);color:var(--field-dark);font-family:'Oswald',sans-serif;text-transform:uppercase;font-size:11px;letter-spacing:0.3px;}
+  td.name-cell{text-align:left;font-weight:600;}
+  .roster-list{display:flex;flex-direction:column;gap:6px;}
+  .roster-item{
+    display:flex;align-items:center;gap:10px;
+    padding:8px 10px;border:1px solid var(--line);border-radius:4px;background:var(--cream);
+  }
+  .roster-item.inactive{opacity:0.45;}
+  .roster-item .pname{flex:1;font-weight:600;}
+  .badge{
+    display:inline-block;font-size:10px;font-family:'Oswald',sans-serif;text-transform:uppercase;
+    padding:2px 7px;border-radius:10px;background:var(--field);color:var(--on-field);letter-spacing:0.3px;
+  }
+  .badge.bench{background:var(--ink-soft);}
+  .note{font-size:12px;color:var(--ink-soft);margin:0 0 14px 0;line-height:1.5;}
+  .warn{
+    background:#FDECEA;background:color-mix(in srgb, var(--ball) 12%, #fff);border:1px solid var(--ball);color:var(--ball-dark);
+    padding:8px 12px;border-radius:4px;font-size:12px;margin-bottom:12px;
+  }
+  .confirm{
+    background:#EAF4EC;background:color-mix(in srgb, var(--field) 12%, #fff);border:1px solid var(--field);color:var(--field-dark);
+    padding:10px 14px;border-radius:4px;font-size:12px;margin-bottom:14px;
+  }
+  .bench-line{font-size:11px;color:var(--ink-soft);margin-top:8px;}
+  .batting-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px;}
+  .batting-list li{
+    display:flex;align-items:center;gap:8px;
+    background:var(--cream);border:1px solid var(--line);border-radius:4px;padding:6px 10px;
+  }
+  .batting-list .num{
+    font-family:'Oswald',sans-serif;font-weight:700;color:var(--ball-text);width:20px;
+  }
+  .batting-list .bname{flex:1;font-weight:600;}
+  .bar-track{background:var(--line);border-radius:3px;height:8px;width:100%;overflow:hidden;}
+  .bar-fill{background:var(--field);height:100%;}
+  .fair-below .bar-fill{background:var(--ball);}
+  .loading{padding:60px;text-align:center;color:var(--ink-soft);font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:1px;}
+  .empty{padding:30px;text-align:center;color:var(--ink-soft);font-size:13px;}
+  .settings-row{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:14px;}
+  .settings-row label{font-size:11px;text-transform:uppercase;font-family:'Oswald',sans-serif;color:var(--ink-soft);display:block;margin-bottom:4px;}
+
+  /* ---------- Phones and small tablets ---------- */
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}   /* stop the browser from inflating some text and not other text */
+  @media (max-width: 720px){
+    #app{padding-bottom:max(48px, env(safe-area-inset-bottom));}
+    .scoreboard{padding:max(14px, env(safe-area-inset-top)) 14px 12px;}
+    .scoreboard h1{font-size:22px;}
+    .brand{gap:10px;}
+    .brand-logo{height:52px;max-width:110px;padding:4px;border-radius:10px;}
+    .ball-icon{width:28px;height:28px;}
+    .season-pick{width:100%;margin-top:4px;}
+    .season-pick select{min-height:40px;}
+    /* tab bar scrolls sideways instead of squashing nine labels into a few pixels each */
+    .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:0 6px;scrollbar-width:none;}
+    .tabs::-webkit-scrollbar{display:none;}
+    .tab{white-space:nowrap;flex:none;padding:13px 14px;}
+    .content{padding:14px 10px 0;}
+    .card{padding:14px 12px;overflow-x:auto;}
+    .card h2{font-size:15px;}
+    /* tables scroll inside their card, with the first column pinned so you always know whose row it is */
+    table{min-width:540px;}
+    td.name-cell,th:first-child{position:sticky;left:0;z-index:1;}
+    td.name-cell{background:var(--white);box-shadow:1px 0 0 var(--line);}
+    th:first-child{z-index:2;}
+    /* 16px inputs stop iOS from zooming the page every time you tap a field; bigger tap targets */
+    input[type=text],input[type=number],input[type=date],select,textarea{font-size:16px !important;min-height:42px;}   /* !important: a few fields set their own size inline */
+    td select{min-width:116px;}   /* fielding-chart dropdowns must show "Pitcher", not "Pit" \u2014 the table scrolls instead */
+    input[type=checkbox]{width:24px;height:24px;}
+    td,th{padding:9px 8px;}
+    label:has(> input[type=checkbox]){min-height:42px;}
+    button{min-height:42px;padding:10px 14px;}
+    button.small{min-height:36px;padding:6px 12px;}
+    label.ghost{min-height:42px;}
+    .settings-row{gap:12px;}
+    .roster-item{flex-wrap:wrap;}
+    .roster-item input[type=text]{flex:1 1 100%;}
+    .batting-list li button{min-width:38px;}
+  }
+</style>
+<div id="app"><div class="loading">Loading roster&hellip;</div></div>
+<script>
+(function(){
+  const DEFAULT_POSITIONS = ["Pitcher","Catcher","1B","2B","3B","SS","LF","LCF","RCF","RF"];
+  const TEAM_DEFAULTS = {primary:'#2F6B45', accent:'#D6472C'};
+  const GENERAL_SKILLS = ["Running","Throwing","Catching","Decision Making","Big Kicks","Bunts"];
+  let roster = [];        // {id, name, active, neverBench}
+  let positions = DEFAULT_POSITIONS.slice();
+  let innings = 6;
+  let battingPointer = 0;
+  let preferredPositions = {}; // playerId -> {1: pos, 2: pos, 3: pos} ranked, coach-only
+  let excludedPositions = {};  // playerId -> array of individual position names this player never plays
+  let generalSkills = {};   // playerId -> {skillName: rating 1-5}, coach-only
+  let weekLog = [];        // [{label, date, gameDate, innings, positions, grid, battingOrder, activeIds, played}]
+  let scheduleDates = [];  // ['YYYY-MM-DD', ...] the season's game dates
+  let attendance = {};     // dateStr -> {playerId: true} where true = known absent
+  let gameDetails = {};    // dateStr -> {time, field, mapImage: dataURL or null}
+  let playerCards = {};    // playerId -> {photo: dataURL or null, tagline: ''}
+  let neverBenchByDate = {}; // dateStr -> {playerId: true} -- per-game, does NOT persist to other dates
+  let coreGroup = {};      // playerId -> true; the players the coach counts as the "core" for Game Stats
+  let baseline = {};       // playerId -> {games, inningsFielded, inningsBenched, positions, benchRecency} carried in from earlier seasons
+  let seasonsMeta = null;  // {currentId, list:[{id,name,createdAt}], nextId}
+  let newSeasonDraft = {open:false, name:'', firstDate:'', numGames:'', newPlayers:'', returning:{}, carryRatings:true, carryStats:true, carryCore:true};
+  let seasonMsg = '';
+  let team = {name:'', logo:null, primary:TEAM_DEFAULTS.primary, accent:TEAM_DEFAULTS.accent};   // global: not part of any season
+  let teamMsg = '';
+  let selectedGameDate = null;
+  let currentGrid = null;  // [{positions:{pos:id}}] length = innings  (bench derived)
+  let currentPosList = []; // every position in play for the current lineup (a position can be vacant in an inning, so this can't be derived from the grid)
+  let currentBattingOrder = [];
+  let activeTab = 'week';
+  let skillsRevealed = false;
+  let nextId = 1;
+  let lastWarning = '';
+  let lastSaveMsg = '';
+
+  function uid(){ return 'p' + (nextId++); }
+
+  function defaultSeasonDates(){
+    const dates = [];
+    let d = new Date('2026-08-29T00:00:00');
+    const end = new Date('2026-10-24T00:00:00');
+    while(d <= end){
+      dates.push(d.toISOString().slice(0,10));
+      d.setDate(d.getDate()+7);
+    }
+    return dates;
+  }
+  function fmtDate(d){
+    if(!d) return '';
+    const [y,m,day] = d.split('-');
+    return `${parseInt(m,10)}/${parseInt(day,10)}`;
+  }
+  function isGamePlayed(date){
+    // "Played" belongs to the game (a row in the Schedule), not to a saved lineup \u2014 a game
+    // can be played whether or not anyone saved a lineup for it.
+    return !!(date && gameDetails[date] && gameDetails[date].played);
+  }
+  function nextUnplayedDate(){
+    return scheduleDates.find(d=>!isGamePlayed(d)) || scheduleDates[scheduleDates.length-1] || null;
+  }
+  function migratePlayedFlags(){
+    // Older versions stored "played" on each saved lineup. Move it onto the game's schedule row.
+    let changed = false;
+    weekLog.forEach(w=>{
+      if(w.played !== undefined){
+        if(w.played && w.gameDate){ ensureGameDetails(w.gameDate).played = true; }
+        delete w.played;
+        changed = true;
+      }
+    });
+    return changed;
+  }
+  function activePlayersForDate(date){
+    const absentSet = (date && attendance[date]) || {};
+    return roster.filter(p=>p.active && !absentSet[p.id]);
+  }
+  function ensureGameDetails(date){
+    if(!date) return {time:'', field:'', mapImage:null, opponent:'', ourScore:null, theirScore:null, played:false};
+    if(!gameDetails[date]) gameDetails[date] = {time:'', field:'', mapImage:null, opponent:'', ourScore:null, theirScore:null, played:false};
+    return gameDetails[date];
+  }
+  function peekGameDetails(date){
+    // Read-only: rendering a tab must never create or change saved data.
+    return (date && gameDetails[date]) || {time:'', field:'', mapImage:null, opponent:'', ourScore:null, theirScore:null, played:false};
+  }
+  function peekPlayerCard(id){
+    return playerCards[id] || {photo:null, tagline:''};
+  }
+  function ensurePlayerCard(id){
+    if(!playerCards[id]) playerCards[id] = {photo:null, tagline:''};
+    return playerCards[id];
+  }
+  function gameResult(details){
+    if(details.ourScore === null || details.ourScore === undefined || details.ourScore === '' ||
+       details.theirScore === null || details.theirScore === undefined || details.theirScore === '') return null;
+    const us = Number(details.ourScore), them = Number(details.theirScore);
+    if(isNaN(us) || isNaN(them)) return null;
+    if(us > them) return 'W';
+    if(us < them) return 'L';
+    return 'T';
+  }
+  function downscaleImageFile(file, maxWidth){
+    return new Promise((resolve, reject)=>{
+      const reader = new FileReader();
+      reader.onload = (e)=>{
+        const img = new Image();
+        img.onload = ()=>{
+          const scale = Math.min(1, maxWidth / img.width);
+          const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.85));
+        };
+        img.onerror = ()=> reject(new Error('Could not read that image file.'));
+        img.src = e.target.result;
+      };
+      reader.onerror = ()=> reject(new Error('Could not read that file.'));
+      reader.readAsDataURL(file);
+    });
+  }
+  function derivePosList(grid, savedList){
+    // Lineups saved before positions were tracked separately have no saved list, so fall
+    // back to every position that shows up in any inning, in the normal field order.
+    if(savedList && savedList.length) return savedList.slice();
+    const seen = new Set();
+    grid.forEach(inn=> Object.keys(inn.positions).forEach(p=> seen.add(p)));
+    const ordered = positions.filter(p=> seen.has(p));
+    seen.forEach(p=>{ if(!ordered.includes(p)) ordered.push(p); });
+    return ordered;
+  }
+  function loadDateIntoEditor(date){
+    selectedGameDate = date;
+    const entry = weekLog.find(w=>w.gameDate===date);
+    if(entry){
+      currentGrid = JSON.parse(JSON.stringify(entry.grid));
+      currentPosList = derivePosList(currentGrid, entry.posList);
+      currentBattingOrder = entry.battingOrder.slice();
+    } else {
+      currentGrid = null;
+      currentPosList = [];
+      currentBattingOrder = [];
+    }
+    lastSaveMsg = '';
+    lastWarning = '';
+  }
+  function isNeverBenchThisDate(date, playerId){
+    return !!(date && neverBenchByDate[date] && neverBenchByDate[date][playerId]);
+  }
+
+  function computeBenchRecency(){
+    // For each player, counts how many PAST PLAYED games they've attended SINCE their
+    // last bench turn (0 if benched last game, resets the game right after they sit).
+    // A missed game doesn't add to this count for anyone \u2014 it freezes, it neither
+    // advances nor resets, so an absence has zero lingering effect once the player
+    // returns. This is only a tiebreaker now (see generateLineup) \u2014 the in-game turn
+    // count and Never Bench priority decide things first; this just keeps rotation fair
+    // across games among players who are otherwise equally positioned this game.
+    const played = weekLog.filter(w=>isGamePlayed(w.gameDate)).slice().sort((a,b)=>(a.gameDate||'').localeCompare(b.gameDate||''));
+    const lastBenchedIdx = {};
+    played.forEach((w, idx)=>{
+      const activeIds = w.activeIds || [];
+      const assignedPerInning = w.grid.map(inning => new Set(Object.values(inning.positions)));
+      activeIds.forEach(id=>{
+        const sat = assignedPerInning.some(set=>!set.has(id));
+        if(sat) lastBenchedIdx[id] = idx;
+      });
+    });
+    const allIds = new Set(Object.keys(baseline));
+    played.forEach(w=> (w.activeIds||[]).forEach(id=>allIds.add(id)));
+    const sinceCount = {};
+    allIds.forEach(id=>{
+      const lastIdx = lastBenchedIdx[id] !== undefined ? lastBenchedIdx[id] : -1;
+      // Not benched yet this season? Then the rotation continues from where last season left off.
+      let c = (lastIdx === -1 && baseline[id]) ? (baseline[id].benchRecency || 0) : 0;
+      for(let i=lastIdx+1;i<played.length;i++){
+        if((played[i].activeIds||[]).includes(id)) c++;
+      }
+      sinceCount[id] = c;
+    });
+    return sinceCount;
+  }
+
+  function computeStats(){
+    // Derived fresh from weekLog every time \u2014 only weeks marked "played" count toward
+    // season stats, so saving a lineup ahead of time never affects fairness math.
+    const s = {};
+    function ensure(id){ if(!s[id]) s[id] = {games:0, inningsFielded:0, inningsBenched:0, positions:{}}; return s[id]; }
+    weekLog.forEach(w=>{
+      if(!isGamePlayed(w.gameDate)) return;
+      const activeIds = w.activeIds || [];
+      const activeSet = new Set(activeIds);
+      const assignedPerInning = w.grid.map(inning => new Set(Object.values(inning.positions)));
+      activeIds.forEach(id=> ensure(id).games += 1);
+      w.grid.forEach((inning, idx)=>{
+        Object.entries(inning.positions).forEach(([pos, id])=>{
+          if(!activeSet.has(id)) return;   // lineups saved before this fix could hold someone who was out; they didn't play
+          const st = ensure(id);
+          st.inningsFielded += 1;
+          st.positions[pos] = (st.positions[pos]||0) + 1;
+        });
+        activeIds.forEach(id=>{
+          if(!assignedPerInning[idx].has(id)) ensure(id).inningsBenched += 1;
+        });
+      });
+    });
+    return s;
+  }
+
+  const LS_CONFIG = 'kickballLineup_config';
+  const LS_PROGRESS = 'kickballLineup_progress';
+  const LS_SEASONS = 'kickballLineup_seasons';
+  const seasonKey = id => 'kickballLineup_season_' + id;
+
+  function normalizeRoster(arr){
+    return (arr || []).slice();
+  }
+  function deepCopy(x){ return JSON.parse(JSON.stringify(x)); }
+  function todayStr(){ return new Date().toISOString().slice(0,10); }
+
+  // ---------- Seasons: what belongs to a season ----------
+  // A season is a self-contained snapshot: roster, ratings, schedule, scores, attendance, saved
+  // lineups, and any stats carried in from the season before. The CURRENT season lives in the
+  // normal config/progress keys; every other season is archived under its own key. Player
+  // photos/taglines are deliberately NOT part of a season \u2014 they belong to the player, and
+  // copying them into every archived season would burn through the browser's storage quota.
+  function defaultSeasonsMeta(){
+    return { currentId: 's1', list: [{id:'s1', name:'Fall 2026', createdAt: todayStr()}], nextId: nextId };
+  }
+  function currentSeason(){
+    return seasonsMeta.list.find(s=>s.id===seasonsMeta.currentId) || seasonsMeta.list[0];
+  }
+  function isNewestSeason(){
+    return seasonsMeta.list[seasonsMeta.list.length-1].id === seasonsMeta.currentId;
+  }
+  function getSnapshot(){
+    return {
+      config: {roster, positions, innings, battingPointer, preferredPositions, excludedPositions, generalSkills, scheduleDates, attendance, gameDetails, neverBenchByDate, coreGroup, baseline},
+      progress: {weekLog}
+    };
+  }
+  function configObject(){
+    const c = getSnapshot().config;
+    c.playerCards = playerCards;
+    c.team = team;
+    c.nextId = nextId;
+    return c;
+  }
+  function applySnapshot(snap, opts){
+    const c = snap.config || {};
+    roster = normalizeRoster(c.roster);
+    positions = c.positions || DEFAULT_POSITIONS.slice();
+    innings = c.innings || 6;
+    battingPointer = c.battingPointer || 0;
+    preferredPositions = c.preferredPositions || {};
+    excludedPositions = c.excludedPositions || {};
+    generalSkills = c.generalSkills || {};
+    scheduleDates = c.scheduleDates || [];
+    attendance = c.attendance || {};
+    gameDetails = c.gameDetails || {};
+    neverBenchByDate = c.neverBenchByDate || {};
+    coreGroup = c.coreGroup || {};
+    baseline = c.baseline || {};
+    weekLog = (snap.progress && snap.progress.weekLog) || [];
+    if(opts && opts.includeCards){
+      playerCards = c.playerCards || {};
+      if(c.team) team = Object.assign({name:'', logo:null, primary:TEAM_DEFAULTS.primary, accent:TEAM_DEFAULTS.accent}, c.team);
+    }
+    // player ids must never be reused across seasons, so this counter only ever goes up
+    nextId = Math.max(nextId, c.nextId || 1, roster.length + 1);
+    roster.forEach(p=>{ const m = /^p(\d+)$/.exec(p.id); if(m) nextId = Math.max(nextId, Number(m[1]) + 1); });
+    return migratePlayedFlags();
+  }
+  function loadSeasonSnapshot(id){
+    try{
+      const raw = localStorage.getItem(seasonKey(id));
+      return raw ? JSON.parse(raw) : null;
+    }catch(e){ console.error('Could not read season', id, e); return null; }
+  }
+  function saveSeasonsMeta(){
+    try{
+      seasonsMeta.nextId = nextId;
+      localStorage.setItem(LS_SEASONS, JSON.stringify(seasonsMeta));
+      return true;
+    }catch(e){ console.error('Storage error (seasons):', e); return false; }
+  }
+
+  function loadState(){
+    let cfgFound = false, migrated = false;
+    try{
+      const raw = localStorage.getItem(LS_CONFIG);
+      if(raw){
+        const c = JSON.parse(raw);
+        let prog = {weekLog: []};
+        try{
+          const rp = localStorage.getItem(LS_PROGRESS);
+          if(rp) prog = JSON.parse(rp);
+        }catch(e){ console.error('Could not read saved progress:', e); }
+        migrated = applySnapshot({config: c, progress: prog}, {includeCards: true});
+        cfgFound = true;
+      }
+    }catch(e){ console.error('Could not read saved data:', e); }
+
+    try{
+      const rawMeta = localStorage.getItem(LS_SEASONS);
+      if(rawMeta) seasonsMeta = JSON.parse(rawMeta);
+    }catch(e){ console.error('Could not read seasons:', e); }
+    if(!seasonsMeta || !seasonsMeta.list || !seasonsMeta.list.length) seasonsMeta = defaultSeasonsMeta();
+    if(!seasonsMeta.list.some(s=>s.id===seasonsMeta.currentId)) seasonsMeta.currentId = seasonsMeta.list[0].id;
+    nextId = Math.max(nextId, seasonsMeta.nextId || 1);
+
+    if(!cfgFound){
+      const seedNames = ["Aaron","Andrew","Billy","Chris","Garrett","Jeffrey","Kevin","Kyle","Michael","Scott","Sean","Stephen","Timothy"];
+      roster = seedNames.map(n=>({id: uid(), name:n, active:true}));
+      scheduleDates = defaultSeasonDates();
+      attendance = {};
+    }
+    if(!cfgFound || migrated){ saveConfig(); saveProgress(); }
+    else saveSeasonsMeta();
+    loadDateIntoEditor(nextUnplayedDate());
+    render();
+  }
+
+  function saveConfig(){
+    try{
+      localStorage.setItem(LS_CONFIG, JSON.stringify(configObject()));
+    }catch(e){
+      console.error('Storage error (config):', e);
+      lastSaveMsg = 'Could not save \u2014 your browser storage may be full or blocked.';
+      render();
+      return false;
+    }
+    if(seasonsMeta) saveSeasonsMeta();
+    return true;
+  }
+  function saveProgress(){
+    try{
+      localStorage.setItem(LS_PROGRESS, JSON.stringify({weekLog}));
+    }catch(e){
+      console.error('Storage error (progress):', e);
+      lastSaveMsg = 'Could not save \u2014 your browser storage may be full or blocked.';
+      render();
+      return false;
+    }
+    return true;
+  }
+
+  // ---------- Backup / restore (now covers every season) ----------
+  function buildBackupObject(){
+    const archived = {};
+    seasonsMeta.list.forEach(s=>{
+      if(s.id === seasonsMeta.currentId) return;
+      const snap = loadSeasonSnapshot(s.id);
+      if(snap) archived[s.id] = snap;
+    });
+    return {
+      tool: 'kickball-lineup-tool',
+      version: 2,
+      exportedAt: new Date().toISOString(),
+      config: configObject(),
+      progress: {weekLog},
+      seasons: { meta: {currentId: seasonsMeta.currentId, list: seasonsMeta.list, nextId}, archived }
+    };
+  }
+  function exportBackup(){
+    const blob = new Blob([JSON.stringify(buildBackupObject(), null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `kickball-backup-${todayStr()}.json`;
+    a.click();
+    setTimeout(()=> URL.revokeObjectURL(url), 2000);
+  }
+  function backupIsFull(data){
+    return !!(data && data.seasons && data.seasons.meta && data.seasons.meta.list && data.seasons.meta.list.length);
+  }
+  function restoreBackup(data){
+    if(!data || !data.config || !data.progress) throw new Error('This file doesn\'t look like a lineup tool backup.');
+    if(backupIsFull(data)){
+      // Version 2: replace everything, every season included.
+      seasonsMeta.list.forEach(s=>{ if(s.id !== seasonsMeta.currentId) localStorage.removeItem(seasonKey(s.id)); });
+      const m = data.seasons.meta;
+      Object.keys(data.seasons.archived || {}).forEach(id=>{
+        localStorage.setItem(seasonKey(id), JSON.stringify(data.seasons.archived[id]));
+      });
+      seasonsMeta = {currentId: m.currentId, list: m.list, nextId: m.nextId || 1};
+      if(!seasonsMeta.list.some(s=>s.id===seasonsMeta.currentId)) seasonsMeta.currentId = seasonsMeta.list[0].id;
+    }
+    // Version 1 (a single season, from before seasons existed): replaces the CURRENT season only;
+    // any other seasons are left alone.
+    applySnapshot({config: data.config, progress: data.progress}, {includeCards: true});
+    loadDateIntoEditor(nextUnplayedDate());
+    saveConfig();
+    saveProgress();
+    saveSeasonsMeta();
+  }
+  function importBackupFile(file){
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      try{
+        const data = JSON.parse(e.target.result);
+        restoreBackup(data);
+        lastSaveMsg = `Backup from ${data.exportedAt ? data.exportedAt.slice(0,10) : 'unknown date'} imported` + (backupIsFull(data) ? ' \u2014 all seasons restored.' : ` into the current season (${currentSeason().name}); other seasons were left alone.`);
+        render();
+      }catch(err){
+        alert('Could not import that file: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // ---------- Seasons: carry-over, create, switch ----------
+  function computeCareerStats(){
+    // This season's played games plus whatever was carried in from earlier seasons.
+    const season = computeStats();
+    const out = {};
+    const ids = new Set(Object.keys(baseline).concat(Object.keys(season)));
+    ids.forEach(id=>{
+      const b = baseline[id] || {games:0, inningsFielded:0, inningsBenched:0, positions:{}};
+      const s = season[id] || {games:0, inningsFielded:0, inningsBenched:0, positions:{}};
+      const pos = Object.assign({}, b.positions || {});
+      Object.keys(s.positions).forEach(k=>{ pos[k] = (pos[k]||0) + s.positions[k]; });
+      out[id] = {
+        games: (b.games||0) + s.games,
+        inningsFielded: (b.inningsFielded||0) + s.inningsFielded,
+        inningsBenched: (b.inningsBenched||0) + s.inningsBenched,
+        positions: pos
+      };
+    });
+    return out;
+  }
+  function buildCarryBaseline(){
+    // What the NEXT season starts with: each player's career totals so far, plus where they
+    // stand in the bench rotation (games since their last turn).
+    const career = computeCareerStats();
+    const recency = computeBenchRecency();
+    const out = {};
+    roster.forEach(p=>{
+      const s = career[p.id];
+      const r = recency[p.id] || 0;
+      if(s || r){
+        out[p.id] = {
+          games: s ? s.games : 0,
+          inningsFielded: s ? s.inningsFielded : 0,
+          inningsBenched: s ? s.inningsBenched : 0,
+          positions: s ? Object.assign({}, s.positions) : {},
+          benchRecency: r
+        };
+      }
+    });
+    return out;
+  }
+  function weeklyDates(first, n){
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(first || '');
+    const out = [];
+    n = Math.min(Number(n) || 0, 40);
+    if(!m || n < 1) return out;
+    let t = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    for(let i=0;i<n;i++){ out.push(new Date(t).toISOString().slice(0,10)); t += 7*86400000; }
+    return out;
+  }
+  function hasUnsavedLineup(){
+    if(!currentGrid) return false;
+    const entry = weekLog.find(w=>w.gameDate===selectedGameDate);
+    if(!entry) return true;
+    return JSON.stringify(entry.grid) !== JSON.stringify(currentGrid) ||
+           JSON.stringify(entry.battingOrder) !== JSON.stringify(currentBattingOrder);
+  }
+  function confirmDiscardUnsaved(){
+    return !hasUnsavedLineup() || confirm('There\'s a lineup on the This Week tab that hasn\'t been saved \u2014 changing seasons will discard it. Continue?');
+  }
+  function archiveCurrentSeason(){
+    try{
+      localStorage.setItem(seasonKey(seasonsMeta.currentId), JSON.stringify(getSnapshot()));
+      return true;
+    }catch(e){ console.error('Could not archive season:', e); return false; }
+  }
+  function seasonSummaryFrom(cfg, prog){
+    const dates = (cfg.scheduleDates || []).slice().sort();
+    const gd = cfg.gameDetails || {};
+    let w=0, l=0, t=0, played=0;
+    dates.forEach(d=>{
+      const det = gd[d];
+      if(!det) return;
+      if(det.played) played++;
+      const r = gameResult(det);
+      if(r==='W') w++; else if(r==='L') l++; else if(r==='T') t++;
+    });
+    return {
+      first: dates[0] || null, last: dates[dates.length-1] || null,
+      games: dates.length, scored: w+l+t, w, l, t, played,
+      lineups: ((prog && prog.weekLog) || []).length,
+      players: (cfg.roster || []).filter(p=>p.active).length
+    };
+  }
+
+  function blankDraft(){
+    return {open:false, name:'', firstDate:'', numGames:'', newPlayers:'', returning:{}, carryRatings:true, carryStats:true, carryCore:true};
+  }
+  function openNewSeasonDraft(){
+    newSeasonDraft = blankDraft();
+    newSeasonDraft.open = true;
+    roster.forEach(p=>{ newSeasonDraft.returning[p.id] = !!p.active; });
+  }
+
+  function createSeason(draft){
+    const name = (draft.name || '').trim();
+    if(!name){ alert('Give the new season a name first (for example, Spring 2027).'); return false; }
+    if(seasonsMeta.list.some(s=>s.name.trim().toLowerCase() === name.toLowerCase())){
+      alert('There\'s already a season with that name.'); return false;
+    }
+    if(!confirmDiscardUnsaved()) return false;
+
+    const prev = getSnapshot();
+    const prevId = seasonsMeta.currentId;
+
+    // Build the new season entirely from the current one BEFORE anything is changed.
+    const carriedBaseline = draft.carryStats ? buildCarryBaseline() : {};
+    const newRoster = roster.map(p=>({
+      id: p.id, name: p.name,
+      active: (draft.returning && draft.returning[p.id] !== undefined) ? !!draft.returning[p.id] : !!p.active
+    }));
+    const skipped = [];
+    const taken = new Set(newRoster.map(p=>p.name.trim().toLowerCase()));
+    let added = 0;
+    (draft.newPlayers || '').split(/[\n,]+/).map(s=>s.trim()).filter(Boolean).forEach(n=>{
+      const key = n.toLowerCase();
+      if(taken.has(key)){ skipped.push(n); return; }
+      taken.add(key);
+      newRoster.push({id: uid(), name: n, active: true});
+      added++;
+    });
+    const ids = new Set(newRoster.map(p=>p.id));
+    const keepOnly = obj => { const o = {}; Object.keys(obj).forEach(k=>{ if(ids.has(k)) o[k] = deepCopy(obj[k]); }); return o; };
+    const next = {
+      config: {
+        roster: newRoster,
+        positions: positions.slice(),
+        innings,
+        battingPointer: 0,
+        preferredPositions: draft.carryRatings ? keepOnly(preferredPositions) : {},
+        excludedPositions: draft.carryRatings ? keepOnly(excludedPositions) : {},
+        generalSkills: draft.carryRatings ? keepOnly(generalSkills) : {},
+        scheduleDates: weeklyDates(draft.firstDate, draft.numGames),
+        attendance: {},
+        gameDetails: {},
+        neverBenchByDate: {},
+        coreGroup: draft.carryCore ? keepOnly(coreGroup) : {},
+        baseline: keepOnly(carriedBaseline)
+      },
+      progress: {weekLog: []}
+    };
+
+    if(!archiveCurrentSeason()){
+      alert('Could not save the current season before starting a new one \u2014 browser storage may be full. Nothing was changed. Try downloading a backup and removing old photos or park maps.');
+      return false;
+    }
+    const newId = 's' + Date.now().toString(36) + Math.floor(Math.random()*1000).toString(36);
+    seasonsMeta.list.push({id: newId, name, createdAt: todayStr()});
+    seasonsMeta.currentId = newId;
+    applySnapshot(next);
+    if(!(saveConfig() && saveProgress())){
+      seasonsMeta.list.pop();
+      seasonsMeta.currentId = prevId;
+      applySnapshot(prev);
+      saveConfig(); saveProgress();
+      localStorage.removeItem(seasonKey(prevId));
+      alert('Could not create the season \u2014 browser storage looks full. Nothing was changed.');
+      render();
+      return false;
+    }
+    newSeasonDraft = blankDraft();
+    seasonMsg = `Created ${name}. ` +
+      `${newRoster.filter(p=>p.active).length} active players` +
+      (added ? ` (${added} new)` : '') +
+      (scheduleDates.length ? `, ${scheduleDates.length} game dates` : ', no game dates yet \u2014 add them on the Attendance tab') +
+      (draft.carryStats ? '; stats carried over' : '') + '.' +
+      (skipped.length ? ` Skipped ${skipped.join(', ')} \u2014 already on the roster.` : '') +
+      ` ${seasonsMeta.list.find(s=>s.id===prevId).name} is saved \u2014 switch back any time.`;
+    activeTab = 'seasons';
+    loadDateIntoEditor(nextUnplayedDate());
+    render();
+    return true;
+  }
+
+  function switchSeason(targetId){
+    if(!targetId || targetId === seasonsMeta.currentId) return false;
+    const target = loadSeasonSnapshot(targetId);
+    if(!target){ alert('Could not find saved data for that season.'); render(); return false; }
+    if(!confirmDiscardUnsaved()){ render(); return false; }
+    const prev = getSnapshot();
+    const prevId = seasonsMeta.currentId;
+    if(!archiveCurrentSeason()){
+      alert('Could not save the current season before switching \u2014 browser storage may be full. Nothing was changed.');
+      render();
+      return false;
+    }
+    applySnapshot(target);
+    seasonsMeta.currentId = targetId;
+    if(!(saveConfig() && saveProgress())){
+      seasonsMeta.currentId = prevId;
+      applySnapshot(prev);
+      saveConfig(); saveProgress();
+      localStorage.removeItem(seasonKey(prevId));
+      alert('Could not switch seasons \u2014 browser storage looks full. Nothing was changed.');
+      render();
+      return false;
+    }
+    localStorage.removeItem(seasonKey(targetId));   // it's the current season now, so its data lives in the main keys
+    seasonMsg = '';
+    loadDateIntoEditor(nextUnplayedDate());
+    render();
+    return true;
+  }
+
+  function deleteSeason(id){
+    if(id === seasonsMeta.currentId) return false;
+    const s = seasonsMeta.list.find(x=>x.id===id);
+    if(!s) return false;
+    if(!confirm(`Permanently delete ${s.name} and all of its schedule, scores, and lineups? This can't be undone (download a backup first if you're not sure).`)) return false;
+    localStorage.removeItem(seasonKey(id));
+    seasonsMeta.list = seasonsMeta.list.filter(x=>x.id!==id);
+    saveSeasonsMeta();
+    seasonMsg = `Deleted ${s.name}.`;
+    render();
+    return true;
+  }
+  function renameSeason(id, name){
+    const s = seasonsMeta.list.find(x=>x.id===id);
+    name = (name || '').trim();
+    if(!s || !name) { render(); return false; }
+    if(seasonsMeta.list.some(x=>x.id!==id && x.name.trim().toLowerCase()===name.toLowerCase())){
+      alert('There\'s already a season with that name.'); render(); return false;
+    }
+    s.name = name;
+    saveSeasonsMeta();
+    render();
+    return true;
+  }
+
+  function activeRoster(){ return roster.filter(p=>p.active); }
+  function playerName(id){ const p = roster.find(x=>x.id===id); return p ? p.name : '\u2014'; }
+  const CENTER_OF = ['LCF','RCF'];
+  const CORNER_OF = ['LF','RF'];
+  function preferenceRank(id, pos){
+    // Returns 1, 2, or 3 if this player has ranked `pos` as that choice, else null.
+    // Center/Corner outfield tags apply equally to either side of that grouping.
+    const map = preferredPositions[id] || {};
+    const groupTag = CENTER_OF.includes(pos) ? 'Center Outfield' : CORNER_OF.includes(pos) ? 'Corner Outfield' : null;
+    for(let r=1; r<=3; r++){
+      const val = map[r];
+      if(val === pos || (groupTag && val === groupTag)) return r;
+    }
+    return null;
+  }
+  function setPreferenceRank(playerId, rank, value){
+    if(!preferredPositions[playerId]) preferredPositions[playerId] = {};
+    const map = preferredPositions[playerId];
+    if(value === 'None'){
+      delete map[rank];
+    } else {
+      for(let r=1; r<=3; r++){
+        if(r!==rank && map[r]===value){
+          alert(`${value} is already this player's #${r} choice. Pick a different position, or clear that one first.`);
+          render();
+          return;
+        }
+      }
+      if(excludedPositions[playerId] && excludedPositions[playerId].includes(value)){
+        alert(`${value} is currently marked as a position this player never plays \u2014 clear that exclusion first if you want to prefer it.`);
+        render();
+        return;
+      }
+      map[rank] = value;
+    }
+    saveConfig();
+    render();
+  }
+  function preferenceColumns(){
+    // Collapses LCF/RCF into one "Center Outfield" tag and LF/RF into one "Corner Outfield"
+    // tag, since side doesn't matter \u2014 each still counts as just one of a player's 3 ranked choices.
+    const cols = [];
+    let addedCenter = false, addedCorner = false;
+    positions.forEach(pos=>{
+      if(CENTER_OF.includes(pos)){
+        if(!addedCenter){ cols.push('Center Outfield'); addedCenter = true; }
+      } else if(CORNER_OF.includes(pos)){
+        if(!addedCorner){ cols.push('Corner Outfield'); addedCorner = true; }
+      } else {
+        cols.push(pos);
+      }
+    });
+    return cols;
+  }
+
+  const OUTFIELD_POSITIONS = CENTER_OF.concat(CORNER_OF); // ['LCF','RCF','LF','RF']
+  function skillFitScore(id, pos){
+    // Outfield leans on Catching + Running; everything else (infield, Pitcher, Catcher)
+    // leans on Throwing + Decision Making.
+    if(OUTFIELD_POSITIONS.includes(pos)){
+      return (generalSkillFor(id,'Catching') + generalSkillFor(id,'Running')) / 2;
+    }
+    return (generalSkillFor(id,'Throwing') + generalSkillFor(id,'Decision Making')) / 2;
+  }
+  function preferenceBonus(id, pos){
+    const r = preferenceRank(id, pos);
+    return r === 1 ? 3 : r === 2 ? 2 : r === 3 ? 1 : 0;
+  }
+  function combinedScore(id, pos){
+    return skillFitScore(id, pos) + preferenceBonus(id, pos);
+  }
+  function isExcluded(id, pos){
+    return !!(excludedPositions[id] && excludedPositions[id].includes(pos));
+  }
+  function setExcluded(playerId, pos, excluded){
+    if(!excludedPositions[playerId]) excludedPositions[playerId] = [];
+    const list = excludedPositions[playerId];
+    if(excluded){
+      // Block exact contradictions against a ranked preference (only possible for
+      // non-outfield positions, since preferred outfield choices are the grouped
+      // Center/Corner tags, not individual sides \u2014 those never collide with this check).
+      const prefMap = preferredPositions[playerId] || {};
+      for(const r of [1,2,3]){
+        if(prefMap[r] === pos){
+          alert(`${pos} is already this player's #${r} preferred choice \u2014 remove that first if you want to exclude it.`);
+          render();
+          return;
+        }
+      }
+      if(!list.includes(pos)) list.push(pos);
+    } else {
+      excludedPositions[playerId] = list.filter(x=>x!==pos);
+    }
+    saveConfig();
+    render();
+  }
+  function generalSkillFor(id, skillName){
+    return (generalSkills[id] && generalSkills[id][skillName] !== undefined) ? generalSkills[id][skillName] : 3;
+  }
+  function overallSkillFor(id){
+    return GENERAL_SKILLS.reduce((sum,sk)=> sum + generalSkillFor(id,sk), 0) / GENERAL_SKILLS.length;
+  }
+
+  // ---------- Lineup generation ----------
+  function generateLineup(){
+    const active = activePlayersForDate(selectedGameDate);
+    const warnings = [];
+    if(active.length === 0){ lastWarning = 'No players available for this date \u2014 check the Roster and Attendance tabs.'; render(); return; }
+    let posList = positions.slice();
+    if(active.length < posList.length){
+      posList = posList.slice(0, active.length);
+      warnings.push(`Only ${active.length} active player(s) for ${positions.length} positions \u2014 using the first ${posList.length} positions this week.`);
+    }
+    const P = posList.length;
+    const N = active.length;
+    const benchPerInning = Math.max(0, N - P);
+
+    const workingFielded = {};
+    const workingPos = {};
+    const statsNow = computeStats();         // this season only \u2014 fairness catch-up shouldn't make new players look "behind"
+    const careerNow = computeCareerStats();  // includes carried-over seasons \u2014 so players stay in the positions they know
+    active.forEach(p=>{
+      const s = statsNow[p.id] || {inningsFielded:0};
+      workingFielded[p.id] = s.inningsFielded;
+      workingPos[p.id] = Object.assign({}, (careerNow[p.id] && careerNow[p.id].positions) || {});
+    });
+
+    // Bench selection priority, in order:
+    //   1. Fewest bench turns THIS GAME so far goes first \u2014 nobody takes a 2nd turn while
+    //      anyone (protected or not) is still on 0 turns, nobody takes a 3rd while anyone's
+    //      still on 1, etc. This is the core fairness rule and applies to everyone equally.
+    //   2. Within a tie on turns-so-far, an unprotected player is picked over a "Never Bench"
+    //      player \u2014 that's what Never Bench actually does: it's the tiebreaker that keeps
+    //      protected players in longer, not an exemption from the queue. If every unprotected
+    //      player already has as many turns as a protected player, the protected player is
+    //      no longer spared \u2014 forcing an unprotected player into an extra turn instead would
+    //      be the exact unfairness this is meant to avoid.
+    //   3. Within the same tier and protection status, season-level recency (see
+    //      computeBenchRecency) keeps rotation fair across games, not just within this one.
+    //   4. A random tiebreak so nothing is permanently biased by player order.
+    const benchRecency = computeBenchRecency();
+    const inGameBenchTurns = {};
+    active.forEach(p=> inGameBenchTurns[p.id] = 0);
+    let exclusionFallbackWarned = false;
+    const benchSortKey = (a,b)=>{
+      const ta = inGameBenchTurns[a.id]||0, tb = inGameBenchTurns[b.id]||0;
+      if(ta!==tb) return ta-tb;
+      const pa = isNeverBenchThisDate(selectedGameDate, a.id) ? 1 : 0;
+      const pb = isNeverBenchThisDate(selectedGameDate, b.id) ? 1 : 0;
+      if(pa!==pb) return pa-pb;
+      const ra = benchRecency[a.id]||0, rb = benchRecency[b.id]||0;
+      if(ra!==rb) return rb-ra;
+      return Math.random()-0.5;
+    };
+
+    const grid = [];
+    for(let i=0;i<innings;i++){
+      const sorted = active.slice().sort(benchSortKey);
+      const benchIds = sorted.slice(0, benchPerInning).map(p=>p.id);
+      benchIds.forEach(id=>{ inGameBenchTurns[id] = (inGameBenchTurns[id]||0) + 1; });
+
+      let pool = active.filter(p=>!benchIds.includes(p.id));
+      const posAssign = {};
+      let remainingPositions = posList.slice();
+      while(remainingPositions.length){
+        // Fill the most-constrained position first (fewest non-excluded candidates left) so a
+        // player's exclusion isn't violated just because of which order positions happen to be
+        // processed in \u2014 that was the bug where an excluded spot got assigned anyway even
+        // though a valid full assignment existed.
+        let pos = null, eligible = null;
+        remainingPositions.forEach(candPos=>{
+          const c = pool.filter(p=>!isExcluded(p.id,candPos));
+          if(pos === null || c.length < eligible.length){ pos = candPos; eligible = c; }
+        });
+        let candidates = eligible;
+        if(candidates.length === 0){
+          candidates = pool.slice();
+          if(!exclusionFallbackWarned){
+            warnings.push(`Position exclusions left no eligible player for at least one spot \u2014 had to assign someone anyway.`);
+            exclusionFallbackWarned = true;
+          }
+        }
+        candidates.sort((a,b)=>{
+          const scoreA = combinedScore(a.id,pos), scoreB = combinedScore(b.id,pos);
+          if(scoreA !== scoreB) return scoreB - scoreA; // higher skill-fit + preference wins
+          const consistA = workingPos[a.id][pos]||0, consistB = workingPos[b.id][pos]||0;
+          if(consistA !== consistB) return consistB - consistA; // prefer keeping them where they've played before
+          return workingFielded[a.id]-workingFielded[b.id]; // then fairness catch-up
+        });
+        const chosen = candidates[0];
+        posAssign[pos] = chosen.id;
+        pool = pool.filter(p=>p.id !== chosen.id);
+        remainingPositions = remainingPositions.filter(p=>p!==pos);
+        workingPos[chosen.id][pos] = (workingPos[chosen.id][pos]||0)+1;
+        workingFielded[chosen.id] += 1;
+      }
+      grid.push({positions: posAssign});
+    }
+    currentGrid = grid;
+    currentPosList = posList.slice();
+    lastWarning = warnings.join(' ');
+    const order = active.slice();
+    const ptr = order.length ? battingPointer % order.length : 0;
+    currentBattingOrder = order.slice(ptr).concat(order.slice(0,ptr)).map(p=>p.id);
+    render();
+  }
+
+  // ---------- Keeping the lineup in step with who's actually available ----------
+  function lineupDrift(){
+    // Players the lineup refers to who are no longer available (marked absent, set inactive, or
+    // removed), and available players the lineup has never heard of (added, or back from an absence).
+    if(!currentGrid) return null;
+    const avail = new Set(activePlayersForDate(selectedGameDate).map(p=>p.id));
+    const used = new Set(currentBattingOrder);
+    currentGrid.forEach(inn=> Object.values(inn.positions).forEach(id=> used.add(id)));
+    const out = [...used].filter(id=> !avail.has(id));
+    const inOrder = new Set(currentBattingOrder);
+    const added = [...avail].filter(id=> !inOrder.has(id));   // everyone available kicks, so anyone missing from the order is new to this lineup
+    return (out.length || added.length) ? {out, added} : null;
+  }
+  function lineupGhostIds(){
+    const d = lineupDrift();
+    return d ? d.out : [];
+  }
+  function syncLineupToAvailability(){
+    // Takes players who are out off the field and out of the batting order, refills the spots they
+    // left from the bench (best fit that isn't blocked from the position), and adds anyone new to
+    // the batting order. Spots nobody can fill stay empty and are flagged. Returns a message, or
+    // null when the lineup was already in step.
+    const drift = lineupDrift();
+    if(!drift) return null;
+    const avail = activePlayersForDate(selectedGameDate);
+    const availIds = new Set(avail.map(p=>p.id));
+    let refilled = 0, stillEmpty = 0, restored = [];
+    // A lineup made when few players were available drops positions; if more players are available now, bring them back.
+    const wanted = Math.min(positions.length, avail.length);
+    if(wanted > currentPosList.length){
+      restored = positions.filter(p=> !currentPosList.includes(p)).slice(0, wanted - currentPosList.length);
+      currentPosList = positions.filter(p=> currentPosList.includes(p) || restored.includes(p));
+    }
+    currentGrid.forEach(inn=>{
+      const pm = inn.positions;
+      const vacatedNow = restored.slice();
+      currentPosList.forEach(pos=>{ if(pm[pos] && !availIds.has(pm[pos])){ delete pm[pos]; vacatedNow.push(pos); } });
+      const assigned = new Set(Object.values(pm));
+      vacatedNow.forEach(pos=>{
+        const cands = avail.filter(p=> !assigned.has(p.id) && !isExcluded(p.id, pos));
+        if(!cands.length){ stillEmpty++; return; }
+        cands.sort((a,b)=> combinedScore(b.id,pos) - combinedScore(a.id,pos) || a.name.localeCompare(b.name));
+        pm[pos] = cands[0].id;
+        assigned.add(cands[0].id);
+        refilled++;
+      });
+    });
+    const order = currentBattingOrder.filter(id=> availIds.has(id));
+    avail.forEach(p=>{ if(!order.includes(p.id)) order.push(p.id); });
+    currentBattingOrder = order;
+    const parts = [];
+    if(drift.out.length) parts.push(drift.out.map(playerName).join(', ') + ' taken out');
+    if(drift.added.length) parts.push(drift.added.map(playerName).join(', ') + ' added');
+    if(restored.length) parts.push(restored.join(', ') + ' put back on the field');
+    return `Lineup updated for who's available now \u2014 ${parts.join('; ')}.` +
+      (refilled ? ` ${refilled} spot${refilled!==1?'s':''} refilled from the bench.` : '') +
+      (stillEmpty ? ` ${stillEmpty} spot${stillEmpty!==1?'s':''} couldn't be filled and are marked empty.` : '') +
+      (drift.added.length ? ' New players start on the bench \u2014 tap Regenerate for a fully balanced lineup.' : '');
+  }
+
+  function benchForInning(inningIdx){
+    const active = activePlayersForDate(selectedGameDate).map(p=>p.id);
+    const assigned = Object.values(currentGrid[inningIdx].positions);
+    return active.filter(id => !assigned.includes(id));
+  }
+
+  function assignmentFor(playerId, inningIdx){
+    const posMap = currentGrid[inningIdx].positions;
+    for(const pos in posMap){
+      if(posMap[pos] === playerId) return pos;
+    }
+    return 'Bench';
+  }
+
+  function inningSignature(inning){
+    return Object.keys(inning.positions).sort().map(pos=>`${pos}:${inning.positions[pos]}`).join('|');
+  }
+
+  function groupUniqueInningLayouts(grid){
+    // Returns [{inning, innings:[1,2,...]}] \u2014 one entry per distinct layout, in first-seen order.
+    const groups = [];
+    const bySig = {};
+    grid.forEach((inning, idx)=>{
+      const sig = inningSignature(inning);
+      if(!bySig[sig]){
+        bySig[sig] = {inning, innings: []};
+        groups.push(bySig[sig]);
+      }
+      bySig[sig].innings.push(idx+1);
+    });
+    return groups;
+  }
+
+  function condenseInningRanges(nums){
+    if(!nums.length) return '';
+    const sorted = nums.slice().sort((a,b)=>a-b);
+    const ranges = [];
+    let start = sorted[0], prev = sorted[0];
+    for(let i=1;i<=sorted.length;i++){
+      if(i<sorted.length && sorted[i]===prev+1){ prev = sorted[i]; continue; }
+      ranges.push(start===prev ? `${start}` : `${start}\u2013${prev}`);
+      if(i<sorted.length){ start = sorted[i]; prev = sorted[i]; }
+    }
+    return ranges.join(', ');
+  }
+
+  const FIELD_POS_COORDS = {
+    Catcher: [0.50, 0.92],
+    Pitcher: [0.50, 0.70],
+    '1B': [0.76, 0.58],
+    '2B': [0.50, 0.40],
+    '3B': [0.24, 0.58],
+    SS: [0.40, 0.48],
+    LF: [0.14, 0.20],
+    LCF: [0.36, 0.06],
+    RCF: [0.64, 0.06],
+    RF: [0.86, 0.20]
+  };
+
+  function setPlayerAssignment(playerId, inningIdx, newValue, opts){
+    // Moving a player to a position someone else holds is a SWAP: the other player takes
+    // the mover's old spot (or goes to the bench if the mover was benched). Setting a
+    // fielder to Bench leaves their position vacant \u2014 there's no way to know who should
+    // replace them, so it's flagged in red rather than silently refilled.
+    if(!playerId || !currentGrid || !currentGrid[inningIdx]) return;   // nothing to move (e.g. every player is marked out)
+    const posMap = currentGrid[inningIdx].positions;
+    const oldPos = assignmentFor(playerId, inningIdx); // a position name, or 'Bench'
+    if(newValue === oldPos) return;
+
+    if(newValue === 'Bench'){
+      if(oldPos !== 'Bench') delete posMap[oldPos];
+    } else {
+      const occupant = posMap[newValue]; // undefined if that position is currently vacant
+      if(oldPos !== 'Bench') delete posMap[oldPos];
+      posMap[newValue] = playerId;
+      if(occupant && occupant !== playerId && oldPos !== 'Bench'){
+        posMap[oldPos] = occupant; // the swap
+      }
+      // if the mover was benched, the displaced occupant simply ends up on the bench
+    }
+    if(!opts || opts.render !== false) render();
+  }
+
+  function vacantPositionsForInning(inningIdx){
+    const posMap = currentGrid[inningIdx].positions;
+    return currentPosList.filter(pos => !posMap[pos]);
+  }
+  function allVacancies(){
+    // [{inning: 1-based number, positions: [...]}] for every inning with an empty position
+    const out = [];
+    if(!currentGrid) return out;
+    currentGrid.forEach((inn, idx)=>{
+      const v = vacantPositionsForInning(idx);
+      if(v.length) out.push({inning: idx+1, positions: v});
+    });
+    return out;
+  }
+
+  function suggestBattingOrderBySkill(){
+    const ids = currentBattingOrder.slice();
+    const N = ids.length;
+    if(N === 0) return;
+
+    // Spread big kickers evenly through the order (never leadoff) instead of stacking them together.
+    const powerCount = Math.min(N, Math.max(1, Math.round(N/3)));
+    const byPower = ids.slice().sort((a,b)=> generalSkillFor(b,'Big Kicks') - generalSkillFor(a,'Big Kicks'));
+    const powerHitters = byPower.slice(0, powerCount);
+    const powerSet = new Set(powerHitters);
+
+    const slots = new Array(N).fill(null);
+
+    // Leadoff goes to a weaker/medium overall-skill player, not a power hitter \u2014 the top
+    // of the order just needs to get on base, so it doesn't need to be your best player.
+    const leadoffCandidates = ids.filter(id=>!powerSet.has(id)).sort((a,b)=> overallSkillFor(a) - overallSkillFor(b));
+    const leadoff = leadoffCandidates.length ? leadoffCandidates[0] : ids.find(id=>!powerSet.has(id));
+    if(leadoff !== undefined) slots[0] = leadoff;
+
+    // Everyone else, ranked by who's best at getting on base and reading the play.
+    const onBaseQueue = ids.filter(id=>!powerSet.has(id) && id!==leadoff).sort((a,b)=>
+      (generalSkillFor(b,'Running')+generalSkillFor(b,'Decision Making')) -
+      (generalSkillFor(a,'Running')+generalSkillFor(a,'Decision Making'))
+    );
+
+    const step = N / (powerCount + 1);
+    const takenSlots = new Set();
+    const powerSlotIdx = [];
+    for(let i=1;i<=powerCount;i++){
+      let idx = Math.round(step*i) - 1;
+      idx = Math.max(1, Math.min(N-1, idx)); // never leadoff (index 0)
+      while(takenSlots.has(idx) && idx < N-1) idx++;
+      while(takenSlots.has(idx) && idx > 1) idx--;
+      takenSlots.add(idx);
+      powerSlotIdx.push(idx);
+    }
+    powerSlotIdx.sort((a,b)=>a-b);
+    powerHitters.forEach((id,i)=>{ slots[powerSlotIdx[i]] = id; });
+
+    // Pack the bases: put your best remaining on-base player right before each power slot
+    // (skips slot 0 automatically since it's already filled with the leadoff pick above).
+    powerSlotIdx.forEach(idx=>{
+      const feeder = idx - 1;
+      if(feeder >= 0 && slots[feeder] === null && onBaseQueue.length){
+        slots[feeder] = onBaseQueue.shift();
+      }
+    });
+
+    // Fill everything else left to right, best remaining on-base skill first.
+    for(let i=0;i<N;i++){
+      if(slots[i] === null) slots[i] = onBaseQueue.length ? onBaseQueue.shift() : null;
+    }
+    const used = new Set(slots.filter(Boolean));
+    const leftover = ids.filter(id=>!used.has(id));
+    for(let i=0;i<N;i++){
+      if(slots[i] === null) slots[i] = leftover.shift();
+    }
+
+    currentBattingOrder = slots;
+    render();
+  }
+
+  function buildLineupText(){
+    const details = ensureGameDetails(selectedGameDate);
+    const extras = [];
+    if(details.field) extras.push(details.field);
+    if(details.time) extras.push(details.time);
+    if(details.opponent) extras.push(`vs ${details.opponent}`);
+    const lines = [];
+    lines.push(`${team.name ? team.name + ' \u2014 ' : ''}Lineup \u2014 ${fmtDate(selectedGameDate) || 'draft'}${extras.length ? ' (' + extras.join(', ') + ')' : ''} \u2014 ${innings} innings`);
+    lines.push('');
+    lines.push('Batting Order:');
+    currentBattingOrder.forEach((id, idx)=> lines.push(`${idx+1}. ${playerName(id)}`));
+    lines.push('');
+    lines.push('Fielding by inning:');
+    currentBattingOrder.forEach(id=>{
+      const cells = [];
+      for(let i=0;i<innings;i++) cells.push(`I${i+1}: ${assignmentFor(id,i)}`);
+      lines.push(`${playerName(id)} \u2014 ${cells.join(', ')}`);
+    });
+    return lines.join('\n');
+  }
+
+  function syncBeforeShare(){
+    const note = syncLineupToAvailability();
+    if(note){ lastSaveMsg = note; render(); }
+  }
+  async function copyLineupText(){
+    syncBeforeShare();
+    try{
+      await navigator.clipboard.writeText(buildLineupText());
+      lastSaveMsg = 'Lineup copied to clipboard \u2014 paste it into a text or email.';
+    }catch(e){
+      lastSaveMsg = 'Could not copy automatically. Select the text from the export and copy manually.';
+    }
+    render();
+  }
+
+  const cardFileName = p => `card-${p.name.replace(/\s+/g,'_')}.jpg`;
+  async function downloadPlayerCard(playerId){
+    const player = roster.find(p=>p.id===playerId);
+    const blob = player ? await buildPlayerCardBlob(playerId) : null;
+    if(blob) saveBlob(blob, cardFileName(player));
+  }
+  async function sharePlayerCard(playerId){
+    const player = roster.find(p=>p.id===playerId);
+    const blob = player ? await buildPlayerCardBlob(playerId) : null;
+    if(blob) await shareBlob(blob, cardFileName(player), player.name + (team.name ? ' \u2014 ' + team.name : ''));
+  }
+  async function buildPlayerCardBlob(playerId){
+    const player = roster.find(p=>p.id===playerId);
+    if(!player) return null;
+    const cardData = ensurePlayerCard(playerId);
+    const th = themeFor();
+    const img = await loadImageSrc(cardData.photo);
+    const logoImg = await loadImageSrc(team.logo);
+
+    const W = 400, H = 560, inset = 14;
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    // Border frame
+    ctx.fillStyle = th.field;
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle = '#FBF6EC';
+    ctx.fillRect(inset, inset, W-inset*2, H-inset*2);
+
+    // Photo area (cover-fit crop if a photo was uploaded)
+    const photoX = inset+10, photoY = inset+10, photoW = W-inset*2-20, photoH = 360;
+    ctx.fillStyle = '#DCD3BE';
+    ctx.fillRect(photoX, photoY, photoW, photoH);
+    if(img){
+      const scale = Math.max(photoW/img.width, photoH/img.height);
+      const iw = img.width*scale, ih = img.height*scale;
+      const ix = photoX + (photoW-iw)/2, iy = photoY + (photoH-ih)/2;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(photoX, photoY, photoW, photoH);
+      ctx.clip();
+      ctx.drawImage(img, ix, iy, iw, ih);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = '#8A8A8A';
+      ctx.font = '14px "JetBrains Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('No photo uploaded', photoX+photoW/2, photoY+photoH/2);
+      ctx.textAlign = 'left';
+    }
+    ctx.strokeStyle = th.fieldDark;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(photoX, photoY, photoW, photoH);
+    ctx.lineWidth = 1;
+
+    // Team logo badge, top-right of the photo
+    if(logoImg){
+      const cx = photoX + photoW - 40, cy = photoY + 40, rad = 34;
+      ctx.fillStyle = '#FBF6EC';
+      ctx.beginPath(); ctx.arc(cx, cy, rad, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = th.field; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(cx, cy, rad, 0, Math.PI*2); ctx.stroke();
+      ctx.lineWidth = 1;
+      const fit = containFit(logoImg, 50, 50);
+      ctx.drawImage(logoImg, cx - fit.w/2, cy - fit.h/2, fit.w, fit.h);
+    }
+
+    // Nameplate banner
+    const bannerY = photoY + photoH + 14;
+    ctx.fillStyle = th.ball;
+    ctx.fillRect(photoX, bannerY, photoW, 56);
+    ctx.fillStyle = th.onBall;
+    ctx.font = 'bold 26px Oswald, Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(player.name.toUpperCase(), photoX+photoW/2, bannerY+37);
+
+    // Tagline
+    ctx.fillStyle = '#1C2B24';
+    ctx.font = 'italic 15px "JetBrains Mono", monospace';
+    ctx.fillText(cardData.tagline || '', photoX+photoW/2, bannerY+56+30);
+
+    // Footer: team name + season
+    if(team.name){
+      ctx.strokeStyle = th.field; ctx.globalAlpha = 0.35;
+      ctx.beginPath(); ctx.moveTo(photoX, 499); ctx.lineTo(photoX+photoW, 499); ctx.stroke();
+      ctx.globalAlpha = 1;
+      let fs = 14;
+      ctx.fillStyle = th.fieldDark;
+      do { ctx.font = `bold ${fs}px Oswald, Arial, sans-serif`; fs--; } while(ctx.measureText(team.name.toUpperCase()).width > photoW && fs > 8);
+      ctx.fillText(team.name.toUpperCase(), W/2, 520);
+      ctx.fillStyle = '#5B6E63';
+      ctx.font = '11px "JetBrains Mono", monospace';
+      ctx.fillText(currentSeason().name, W/2, 537);
+    }
+    ctx.textAlign = 'left';
+
+    return new Promise((resolve)=> canvas.toBlob(resolve, 'image/jpeg', 0.92));
+  }
+
+  function drawFieldDiagram(ctx, x, y, w, h, inning, label){
+    const th = themeFor();
+    ctx.fillStyle = '#1C2B24';
+    ctx.font = 'bold 12px Oswald, Arial, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(label, x, y+14);
+
+    const fieldTop = y+20, fieldH = h-24;
+    ctx.fillStyle = mixHex(th.field, '#FFFFFF', 0.86);
+    ctx.fillRect(x, fieldTop, w, fieldH);
+    ctx.strokeStyle = th.field;
+    ctx.strokeRect(x, fieldTop, w, fieldH);
+
+    const coord = (key)=>{
+      const c = FIELD_POS_COORDS[key];
+      return c ? [x + c[0]*w, fieldTop + c[1]*fieldH] : null;
+    };
+    const home = coord('Catcher'), first = coord('1B'), second = coord('2B'), third = coord('3B');
+    if(home && first && second && third){
+      ctx.strokeStyle = '#C9A66B';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(home[0],home[1]);
+      ctx.lineTo(first[0],first[1]);
+      ctx.lineTo(second[0],second[1]);
+      ctx.lineTo(third[0],third[1]);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.lineWidth = 1;
+    }
+
+    Object.entries(inning.positions).forEach(([pos,id])=>{
+      const c = coord(pos);
+      if(!c) return;
+      const [px,py] = c;
+      ctx.fillStyle = th.ballText;
+      ctx.beginPath();
+      ctx.arc(px, py, 5, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = '#1C2B24';
+      ctx.font = '10px "JetBrains Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(playerName(id), px, py + 16);
+    });
+    ctx.textAlign = 'left';
+  }
+
+  function saveBlob(blob, filename){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    setTimeout(()=> URL.revokeObjectURL(url), 2000);
+  }
+  function canShareFiles(){
+    // True on phones/tablets whose browser can hand a file to the share sheet (Messages, WhatsApp, ...).
+    try{
+      return !!(navigator.share && navigator.canShare && navigator.canShare({files: [new File(['x'], 'x.jpg', {type: 'image/jpeg'})]}));
+    }catch(e){ return false; }
+  }
+  async function shareBlob(blob, filename, title){
+    try{
+      await navigator.share({files: [new File([blob], filename, {type: 'image/jpeg'})], title});
+    }catch(e){
+      if(e && e.name === 'AbortError') return;      // they closed the share sheet \u2014 nothing went wrong
+      saveBlob(blob, filename);                       // anything else: fall back to a normal download
+    }
+  }
+  const lineupFileName = ()=> `lineup-${selectedGameDate || 'draft'}.jpg`;
+  async function exportLineupImage(){
+    syncBeforeShare();
+    const blob = await buildLineupBlob();
+    if(blob) saveBlob(blob, lineupFileName());
+  }
+  async function shareLineupImage(){
+    syncBeforeShare();
+    const blob = await buildLineupBlob();
+    if(blob) await shareBlob(blob, lineupFileName(), (team.name ? team.name + ' \u2014 ' : '') + 'Lineup ' + (fmtDate(selectedGameDate) || ''));
+  }
+  async function buildLineupBlob(){
+    if(!currentGrid || !currentBattingOrder.length) return null;
+    const ids = currentBattingOrder;
+    const details = ensureGameDetails(selectedGameDate);
+    const nameColW = 160, cellW = 82, rowH = 32, pad = 18;
+    const tableWidth = nameColW + cellW*innings + pad*2;
+
+    const diagCellW = 220, diagCellH = 210, diagGap = 14, diagPerRow = 3;
+    const uniqueLayouts = groupUniqueInningLayouts(currentGrid);
+    const diagRows = Math.ceil(uniqueLayouts.length / diagPerRow);
+    const diagRowWidth = diagPerRow*diagCellW + (diagPerRow-1)*diagGap + pad*2;
+
+    const th = themeFor();
+    const subLine = [];
+    if(details.field) subLine.push(details.field);
+    if(details.time) subLine.push(details.time);
+    if(details.opponent) subLine.push(`vs ${details.opponent}`);
+
+    const logoImg = await loadImageSrc(team.logo);
+    const dateTxt = fmtDate(selectedGameDate) || 'draft';
+    const lineSpecs = [];
+    if(team.name){
+      lineSpecs.push({text: team.name.toUpperCase(), font: 'bold 24px Oswald, Arial, sans-serif'});
+      lineSpecs.push({text: `Lineup \u2014 ${dateTxt} \u00b7 ${currentSeason().name}`, font: 'bold 15px Oswald, Arial, sans-serif'});
+    } else {
+      lineSpecs.push({text: `Lineup \u2014 ${dateTxt}`, font: 'bold 22px Oswald, Arial, sans-serif'});
+    }
+    lineSpecs.push({text: `${innings} innings \u00b7 ${ids.length} players \u00b7 batting order = row order`, font: '13px "JetBrains Mono", monospace'});
+    if(subLine.length) lineSpecs.push({text: subLine.join('   \u00b7   '), font: '13px "JetBrains Mono", monospace'});
+    const lineGap = 22;
+    const headerH = Math.max(34 + (lineSpecs.length-1)*lineGap + 20, logoImg ? 92 : 0);
+    const lg = logoImg ? containFit(logoImg, 140, Math.min(68, headerH - 24)) : null;
+    const badgeW = lg ? lg.w + 12 : 0, badgeH = lg ? lg.h + 12 : 0;
+    const textX = lg ? pad + badgeW + 16 : pad;
+    const measure = document.createElement('canvas').getContext('2d');
+    const headerNeedW = textX + Math.max(...lineSpecs.map(l=>{ measure.font = l.font; return measure.measureText(l.text).width; })) + pad;
+    const width = Math.max(tableWidth, diagRowWidth, Math.ceil(headerNeedW));
+
+    let mapImg = null, mapH = 0;
+    if(details.mapImage){
+      mapImg = await new Promise((resolve)=>{
+        const img = new Image();
+        img.onload = ()=> resolve(img);
+        img.onerror = ()=> resolve(null);
+        img.src = details.mapImage;
+      });
+      if(mapImg){
+        const scale = Math.min(1, (width - pad*2) / mapImg.width);
+        mapH = Math.round(mapImg.height*scale) + 16;
+      }
+    }
+
+    const tableH = rowH*(ids.length+1);
+    const diagTitleH = uniqueLayouts.length ? 30 : 0;
+    const diagSectionH = uniqueLayouts.length ? diagTitleH + diagRows*diagCellH + pad : 0;
+    const height = headerH + mapH + tableH + diagSectionH + pad;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width; canvas.height = height;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = '#FBF6EC'; ctx.fillRect(0,0,width,height);
+    ctx.fillStyle = th.field; ctx.fillRect(0,0,width,headerH);
+    ctx.fillStyle = th.ball; ctx.fillRect(0, headerH-4, width, 4);
+    if(lg){
+      const bx = pad, by = Math.round((headerH - 4 - badgeH) / 2);
+      ctx.fillStyle = '#FBF6EC';
+      roundedRectPath(ctx, bx, by, badgeW, badgeH, 10);
+      ctx.fill();
+      ctx.drawImage(logoImg, bx + 6, by + 6, lg.w, lg.h);
+    }
+    ctx.fillStyle = th.onField;
+    lineSpecs.forEach((l, i)=>{ ctx.font = l.font; ctx.fillText(l.text, textX, 34 + i*lineGap); });
+
+    let y = headerH;
+    if(mapImg){
+      const scale = Math.min(1, (width - pad*2) / mapImg.width);
+      const w = Math.round(mapImg.width*scale), h = Math.round(mapImg.height*scale);
+      ctx.drawImage(mapImg, pad, y+8, w, h);
+      y += mapH;
+    }
+
+    ctx.fillStyle = '#C9A66B'; ctx.fillRect(0, y, width, rowH);
+    ctx.fillStyle = th.fieldDark;
+    ctx.font = 'bold 12px Oswald, Arial, sans-serif';
+    ctx.fillText('Player', pad, y+21);
+    for(let i=0;i<innings;i++){
+      ctx.fillText(`Inn ${i+1}`, nameColW + i*cellW + 10, y+21);
+    }
+    y += rowH;
+
+    ids.forEach((id, idx)=>{
+      ctx.fillStyle = idx%2===0 ? '#FFFFFF' : '#F3ECD9';
+      ctx.fillRect(0, y, width, rowH);
+      ctx.strokeStyle = '#DCD3BE';
+      ctx.strokeRect(0, y, width, rowH);
+      ctx.fillStyle = '#1C2B24';
+      ctx.font = 'bold 12px "JetBrains Mono", monospace';
+      ctx.fillText(`${idx+1}. ${playerName(id)}`, pad, y+21);
+      ctx.font = '12px "JetBrains Mono", monospace';
+      for(let i=0;i<innings;i++){
+        const pos = assignmentFor(id, i);
+        ctx.fillStyle = pos === 'Bench' ? '#8A8A8A' : '#1C2B24';
+        ctx.fillText(pos, nameColW + i*cellW + 10, y+21);
+        ctx.strokeStyle = '#DCD3BE';
+        ctx.strokeRect(nameColW + i*cellW, y, cellW, rowH);
+      }
+      y += rowH;
+    });
+
+    if(uniqueLayouts.length){
+      ctx.fillStyle = th.fieldDark;
+      ctx.font = 'bold 14px Oswald, Arial, sans-serif';
+      ctx.fillText('FIELD POSITIONS BY INNING', pad, y+22);
+      y += diagTitleH;
+      uniqueLayouts.forEach((g, i)=>{
+        const col = i % diagPerRow, row = Math.floor(i / diagPerRow);
+        const dx = pad + col*(diagCellW+diagGap);
+        const dy = y + row*diagCellH;
+        const label = g.innings.length>1 ? `Innings ${condenseInningRanges(g.innings)}` : `Inning ${g.innings[0]}`;
+        drawFieldDiagram(ctx, dx, dy, diagCellW-diagGap, diagCellH-diagGap, g.inning, label);
+      });
+    }
+
+    return new Promise((resolve)=> canvas.toBlob(resolve, 'image/jpeg', 0.92));
+  }
+
+  function moveBattingOrder(idx, dir){
+    const j = idx + dir;
+    if(j<0 || j>=currentBattingOrder.length) return;
+    const tmp = currentBattingOrder[idx];
+    currentBattingOrder[idx] = currentBattingOrder[j];
+    currentBattingOrder[j] = tmp;
+    render();
+  }
+
+  async function saveLineup(){
+    if(!currentGrid) return;
+    const syncNote = syncLineupToAvailability();   // a saved lineup must only contain players who were actually there
+    const active = activePlayersForDate(selectedGameDate);
+    const weekNum = scheduleDates.indexOf(selectedGameDate) + 1;
+    const label = (weekNum > 0 ? `Week ${weekNum}` : 'Lineup') + (selectedGameDate ? ' \u2014 ' + fmtDate(selectedGameDate) : '');
+    const existingIdx = weekLog.findIndex(w=>w.gameDate===selectedGameDate);
+    const entry = {
+      label,
+      date: new Date().toISOString().slice(0,10),
+      gameDate: selectedGameDate,
+      innings,
+      positions: positions.slice(),
+      posList: currentPosList.slice(),
+      grid: JSON.parse(JSON.stringify(currentGrid)),
+      battingOrder: currentBattingOrder.slice(),
+      activeIds: active.map(p=>p.id),
+      neverBenchIds: Object.keys(neverBenchByDate[selectedGameDate] || {})
+    };
+    if(existingIdx >= 0) weekLog[existingIdx] = entry; else weekLog.push(entry);
+    battingPointer = (battingPointer + 1) % Math.max(1, active.length);
+    const vacancies = allVacancies();
+    const vacancyNote = vacancies.length
+      ? ' Heads up \u2014 saved with empty positions: ' + vacancies.map(v=>`inning ${v.inning} (${v.positions.join(', ')})`).join('; ') + '.'
+      : '';
+    lastSaveMsg = `${label} saved.` + (isGamePlayed(selectedGameDate) ? ' (This game is marked played \u2014 stats already reflect it.)' : ' Tick Played in the Attendance tab Schedule once the game happens to fold it into season stats.') + vacancyNote + (syncNote ? ' (' + syncNote + ')' : '');
+    await saveConfig();
+    await saveProgress();
+    render();
+  }
+
+  function setGamePlayed(gameDate, value){
+    if(!gameDate) return;
+    ensureGameDetails(gameDate).played = !!value;
+    saveConfig();
+    render();
+  }
+
+  function startNewWeek(){
+    currentGrid = null;
+    currentPosList = [];
+    currentBattingOrder = [];
+    lastSaveMsg = '';
+    render();
+  }
+
+  // ---------- Roster ----------
+  function addPlayer(name){
+    if(!name.trim()) return;
+    roster.push({id: uid(), name: name.trim(), active: true});
+    saveConfig();
+    render();
+  }
+  function toggleActive(id){
+    const p = roster.find(x=>x.id===id);
+    if(p){ p.active = !p.active; saveConfig(); render(); }
+  }
+  function toggleNeverBenchForDate(date, playerId){
+    if(!date) return;
+    if(!neverBenchByDate[date]) neverBenchByDate[date] = {};
+    if(neverBenchByDate[date][playerId]) delete neverBenchByDate[date][playerId];
+    else neverBenchByDate[date][playerId] = true;
+    saveConfig();
+    render();
+  }
+  function removePlayer(id){
+    roster = roster.filter(p=>p.id!==id);
+    delete preferredPositions[id];
+    delete excludedPositions[id];
+    delete generalSkills[id];
+    delete coreGroup[id];
+    delete baseline[id];
+    saveConfig(); saveProgress(); render();
+  }
+  function renamePlayer(id, name){
+    const p = roster.find(x=>x.id===id);
+    if(p && name.trim()){ p.name = name.trim(); saveConfig(); render(); }
+  }
+
+  // ---------- Rendering ----------
+  function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  // ---------- Team identity & theme ----------
+  // The team's name, logo and colors are global (like player photos) \u2014 they don't change when a
+  // new season starts. Every text-on-color pair is recomputed for contrast, so a pale or very dark
+  // team color can never make the header, tabs, or buttons unreadable.
+  function validHex(h){ return typeof h === 'string' && /^#[0-9a-fA-F]{6}$/.test(h); }
+  function hexToRgb(h){ const n = parseInt(h.slice(1), 16); return [(n>>16)&255, (n>>8)&255, n&255]; }
+  function rgbToHex(r, g, b){ return '#' + [r,g,b].map(v=> Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2,'0')).join(''); }
+  function relLum(h){
+    const [r,g,b] = hexToRgb(h).map(v=>{ v /= 255; return v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4); });
+    return 0.2126*r + 0.7152*g + 0.0722*b;
+  }
+  function contrastRatio(a, b){
+    const la = relLum(a), lb = relLum(b);
+    return (Math.max(la,lb) + 0.05) / (Math.min(la,lb) + 0.05);
+  }
+  function mixHex(a, b, amt){
+    const x = hexToRgb(a), y = hexToRgb(b);
+    return rgbToHex(x[0]+(y[0]-x[0])*amt, x[1]+(y[1]-x[1])*amt, x[2]+(y[2]-x[2])*amt);
+  }
+  function ensureContrast(hex, bg, min){
+    let c = hex;
+    for(let i=0; i<40 && contrastRatio(c, bg) < min; i++) c = mixHex(c, '#000000', 0.08);
+    return c;
+  }
+  function onColor(bg){
+    // Prefer the app's cream/ink for looks; fall back to pure white/black when a mid-tone color
+    // can't reach readable contrast with either (cream/ink top out around 3.7:1 near mid-gray).
+    const options = ['#FBF6EC', '#1C2B24', '#FFFFFF', '#000000'];
+    const ok = options.find(o => contrastRatio(bg, o) >= 4.5);
+    if(ok) return ok;
+    return options.reduce((best, o)=> contrastRatio(bg, o) > contrastRatio(bg, best) ? o : best, options[0]);
+  }
+
+  function themeFor(t){
+    t = t || team;
+    const p = validHex(t.primary) ? t.primary : TEAM_DEFAULTS.primary;
+    const a = validHex(t.accent) ? t.accent : TEAM_DEFAULTS.accent;
+    const fieldDark = ensureContrast(mixHex(p, '#000000', 0.32), '#C9A66B', 4.5);
+    const ballDark = ensureContrast(mixHex(a, '#000000', 0.22), '#FDECEA', 4.5);
+    return {
+      field: p, fieldDark, ball: a, ballDark,
+      ballText: ensureContrast(a, '#FBF6EC', 3),
+      onField: onColor(p), onFieldDark: onColor(fieldDark), onBall: onColor(a), onBallDark: onColor(ballDark),
+      isDefault: p.toLowerCase() === TEAM_DEFAULTS.primary.toLowerCase() && a.toLowerCase() === TEAM_DEFAULTS.accent.toLowerCase()
+    };
+  }
+  function themeStyle(){
+    const th = themeFor();
+    if(th.isDefault) return '';
+    return `--field:${th.field};--field-dark:${th.fieldDark};--ball:${th.ball};--ball-dark:${th.ballDark};--ball-text:${th.ballText};--on-field:${th.onField};--on-field-dark:${th.onFieldDark};--on-ball:${th.onBall};--on-ball-dark:${th.onBallDark};--sub-opacity:1;`;
+  }
+  function applyTheme(){
+    try{ const app = document.getElementById('app'); if(app && app.style) app.style.cssText = themeStyle(); }catch(e){}
+  }
+  function faviconFor(color){
+    return 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><circle cx='20' cy='20' r='17' fill='${color}' stroke='#FBF6EC' stroke-width='2'/><path d='M20 3 L20 37 M3 20 L37 20 M7 7 L33 33 M33 7 L7 33' stroke='#FBF6EC' stroke-width='1.4' opacity='0.7'/></svg>`);
+  }
+  function applyBranding(){
+    try{
+      document.title = (team.name ? team.name + ' \u2014 ' : '') + 'Weekly Lineup';
+      let link = document.querySelector("link[rel='icon']");
+      if(!link){ link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+      link.href = team.logo || faviconFor(themeFor().ball);
+      const meta = document.querySelector("meta[name='theme-color']");
+      if(meta) meta.setAttribute('content', themeFor().field);
+    }catch(e){}
+    refreshHomeIcon();
+  }
+  let homeIconKey = '';
+  function refreshHomeIcon(){
+    // iOS puts a transparent icon on a black square, so build a solid 180x180 one: the team's main
+    // color with the logo (or the kickball) on it. Only rebuilt when the logo or colors change.
+    try{
+      const th = themeFor();
+      const key = (team.logo ? team.logo.length : 0) + '|' + th.field + '|' + th.ball;
+      if(key === homeIconKey) return;
+      homeIconKey = key;
+      makeHomeIcon().then(url=>{
+        if(!url) return;
+        let link = document.querySelector("link[rel='apple-touch-icon']");
+        if(!link){ link = document.createElement('link'); link.rel = 'apple-touch-icon'; document.head.appendChild(link); }
+        link.href = url;
+      }).catch(()=>{});
+    }catch(e){}
+  }
+  async function makeHomeIcon(){
+    const th = themeFor(), S = 180;
+    const canvas = document.createElement('canvas');
+    canvas.width = S; canvas.height = S;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = th.field; ctx.fillRect(0, 0, S, S);
+    const img = await loadImageSrc(team.logo);
+    if(img){
+      ctx.fillStyle = '#FBF6EC';
+      roundedRectPath(ctx, 18, 18, S-36, S-36, 30);
+      ctx.fill();
+      const fit = containFit(img, S-56, S-56);
+      ctx.drawImage(img, (S-fit.w)/2, (S-fit.h)/2, fit.w, fit.h);
+    } else {
+      ctx.fillStyle = th.ball;
+      ctx.beginPath(); ctx.arc(S/2, S/2, 62, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = '#FBF6EC'; ctx.lineWidth = 6;
+      ctx.beginPath(); ctx.arc(S/2, S/2, 62, 0, Math.PI*2); ctx.stroke();
+      ctx.lineWidth = 3; ctx.globalAlpha = 0.7;
+      ctx.beginPath();
+      ctx.moveTo(S/2, S/2-62); ctx.lineTo(S/2, S/2+62); ctx.moveTo(S/2-62, S/2); ctx.lineTo(S/2+62, S/2);
+      ctx.moveTo(S/2-44, S/2-44); ctx.lineTo(S/2+44, S/2+44); ctx.moveTo(S/2+44, S/2-44); ctx.lineTo(S/2-44, S/2+44);
+      ctx.stroke(); ctx.globalAlpha = 1;
+    }
+    return canvas.toDataURL('image/png');
+  }
+  function brandBlockHtml(){
+    const mark = team.logo
+      ? `<img class="brand-logo" src="${team.logo}" alt="${esc(team.name || 'Team logo')}">`
+      : ballSvg();
+    const title = team.name ? esc(team.name) : 'Weekly Lineup';
+    const sub = team.name
+      ? `Weekly lineup \u00b7 ${esc(currentSeason().name)}`
+      : 'Kickball \u00b7 equal playing time, tracked across every week';
+    const size = team.name && team.name.length > 22 ? ' style="font-size:22px;"' : '';
+    return `<div class="brand">${mark}<div><h1${size}>${title}</h1><div class="sub">${sub}</div></div></div>`;
+  }
+
+  function loadImageSrc(src){
+    return new Promise((resolve)=>{
+      if(!src){ resolve(null); return; }
+      const im = new Image();
+      im.onload = ()=> resolve(im);
+      im.onerror = ()=> resolve(null);
+      im.src = src;
+    });
+  }
+  function roundedRectPath(ctx, x, y, w, h, r){
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.lineTo(x+w-r, y); ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+    ctx.lineTo(x+w, y+h-r); ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+    ctx.lineTo(x+r, y+h); ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+    ctx.lineTo(x, y+r); ctx.quadraticCurveTo(x, y, x+r, y);
+    ctx.closePath();
+  }
+  function containFit(img, maxW, maxH){
+    const s = Math.min(maxW / img.width, maxH / img.height);
+    return {w: Math.max(1, Math.round(img.width * s)), h: Math.max(1, Math.round(img.height * s))};
+  }
+
+  function processLogoFile(file){
+    // Unlike player photos, a logo keeps its transparency (PNG) \u2014 flattening it to a JPEG would
+    // put a black box behind it.
+    return new Promise((resolve, reject)=>{
+      const reader = new FileReader();
+      reader.onload = (e)=>{
+        const img = new Image();
+        img.onload = ()=>{
+          const w0 = img.naturalWidth || img.width || 300, h0 = img.naturalHeight || img.height || 300;
+          const keepAlpha = file.type !== 'image/jpeg';
+          const attempt = (maxSide)=>{
+            const scale = file.type === 'image/svg+xml' ? maxSide / Math.max(w0, h0) : Math.min(1, maxSide / Math.max(w0, h0));
+            const w = Math.max(1, Math.round(w0 * scale)), h = Math.max(1, Math.round(h0 * scale));
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            if(!keepAlpha){ ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, w, h); }
+            ctx.drawImage(img, 0, 0, w, h);
+            return keepAlpha ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', 0.9);
+          };
+          let out = attempt(480);
+          if(out.length > 700000) out = attempt(320);
+          if(out.length > 700000) out = attempt(200);
+          resolve(out);
+        };
+        img.onerror = ()=> reject(new Error('Could not read that image file.'));
+        img.src = e.target.result;
+      };
+      reader.onerror = ()=> reject(new Error('Could not read that file.'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function extractLogoColors(dataUrl){
+    // Samples the logo and returns its two most prominent distinct colors (ignoring transparent,
+    // near-white, near-black, and gray pixels first, since those are usually outlines/backgrounds).
+    return loadImageSrc(dataUrl).then(img=>{
+      if(!img) return null;
+      const S = 64;
+      const canvas = document.createElement('canvas');
+      canvas.width = S; canvas.height = S;
+      const ctx = canvas.getContext('2d');
+      const fit = containFit(img, S, S);
+      ctx.drawImage(img, Math.floor((S-fit.w)/2), Math.floor((S-fit.h)/2), fit.w, fit.h);
+      const data = ctx.getImageData(0, 0, S, S).data;
+      const tally = (strict)=>{
+        const buckets = {};
+        for(let i=0; i<data.length; i+=4){
+          const r = data[i], g = data[i+1], b = data[i+2], al = data[i+3];
+          if(al < 128) continue;
+          const mx = Math.max(r,g,b), mn = Math.min(r,g,b);
+          const light = (mx + mn) / 510;
+          const sat = mx === mn ? 0 : (mx - mn) / (255 - Math.abs(mx + mn - 255));
+          if(light > 0.94) continue;
+          if(strict && (light < 0.1 || sat < 0.25)) continue;
+          const key = ((r>>4)<<8) | ((g>>4)<<4) | (b>>4);
+          const bk = buckets[key] || (buckets[key] = {n:0, r:0, g:0, b:0});
+          bk.n++; bk.r += r; bk.g += g; bk.b += b;
+        }
+        return Object.values(buckets).sort((x,y)=> y.n - x.n)
+          .map(bk=>[bk.r/bk.n, bk.g/bk.n, bk.b/bk.n]);
+      };
+      let list = tally(true);
+      if(!list.length) list = tally(false);   // gray/black-and-white logo
+      if(!list.length) return null;
+      const dist = (p,q)=> Math.hypot(p[0]-q[0], p[1]-q[1], p[2]-q[2]);
+      const first = list[0];
+      const second = list.find(c=> dist(c, first) > 90) || null;
+      return {primary: rgbToHex(...first), accent: second ? rgbToHex(...second) : null};
+    });
+  }
+
+  function render(){
+    applyTheme();
+    applyBranding();
+    const app = document.getElementById('app');
+    app.innerHTML = `
+      <div class="scoreboard">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;">
+          ${brandBlockHtml()}
+          <div class="season-pick" style="min-width:170px;">
+            <label style="font-family:'Oswald',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;opacity:0.85;display:block;margin-bottom:3px;">Season</label>
+            <select id="seasonSelect">${seasonsMeta.list.map(s=>`<option value="${s.id}" ${s.id===seasonsMeta.currentId?'selected':''}>${esc(s.name)}</option>`).join('')}</select>
+          </div>
+        </div>
+      </div>
+      <div class="tabs">
+        ${tabBtn('week','This Week')}
+        ${tabBtn('roster','Roster')}
+        ${tabBtn('attendance','Attendance')}
+        ${tabBtn('skills','Skill Ratings')}
+        ${tabBtn('fairness','Fairness Report')}
+        ${tabBtn('gamestats','Game Stats')}
+        ${tabBtn('cards','Player Cards')}
+        ${tabBtn('seasons','Seasons')}
+        ${tabBtn('team','Team')}
+      </div>
+      <div class="content">
+        ${isNewestSeason() ? '' : `<div style="background:#FFF6DD;border:1px solid var(--dirt);border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:12px;">Viewing <b>${esc(currentSeason().name)}</b> \u2014 a past season. Anything you change here edits that season's records. <button class="small ghost" id="goNewestBtn" style="margin-left:8px;">Go to ${esc(seasonsMeta.list[seasonsMeta.list.length-1].name)}</button></div>`}
+        ${activeTab==='week' ? renderWeek() : activeTab==='roster' ? renderRoster() : activeTab==='attendance' ? renderAttendance() : activeTab==='skills' ? renderSkills() : activeTab==='gamestats' ? renderGameStats() : activeTab==='cards' ? renderPlayerCards() : activeTab==='seasons' ? renderSeasons() : activeTab==='team' ? renderTeam() : renderFairness()}
+      </div>
+    `;
+    wireEvents();
+  }
+
+  function ballSvg(){
+    return `<svg class="ball-icon" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="20" cy="20" r="17" style="fill:var(--ball);" stroke="#FBF6EC" stroke-width="2"/>
+      <path d="M20 3 L20 37 M3 20 L37 20 M7 7 L33 33 M33 7 L7 33" stroke="#FBF6EC" stroke-width="1.4" opacity="0.7"/>
+    </svg>`;
+  }
+
+  function tabBtn(key, label){
+    return `<button class="tab ${activeTab===key?'active':''}" data-tab="${key}">${label}</button>`;
+  }
+
+  function renderWeek(){
+    const active = activePlayersForDate(selectedGameDate);
+    const longTermActive = activeRoster();
+    const absentCount = longTermActive.length - active.length;
+    const existingEntry = weekLog.find(w=>w.gameDate===selectedGameDate);
+    let html = `<div class="card"><h2>Set up this week</h2>`;
+    if(!currentGrid){
+      html += `<div class="settings-row">
+          <div><label>Game Date</label>
+            <select id="gameDateInput">${scheduleDates.length ? '' : '<option value="">No dates scheduled</option>'}${scheduleDates.map(d=>{
+              const played = isGamePlayed(d);
+              const saved = weekLog.some(w=>w.gameDate===d);
+              return `<option value="${d}" ${d===selectedGameDate?'selected':''}>${fmtDate(d)}${played?' (played)':saved?' (saved)':''}</option>`;
+            }).join('')}</select>
+          </div>
+          <div><label>Innings this game</label><input type="number" id="inningsInput" min="1" max="12" value="${innings}" style="width:70px;"></div>
+        </div>
+        <div class="note">${active.length} player(s) available${absentCount>0?` \u2014 ${absentCount} marked absent for this date (see Attendance tab)`:''}. Generate benches whoever's played the most so far and rotates positions for variety.</div>
+        <button class="primary" id="generateBtn" ${active.length===0?'disabled':''}>Generate Lineup</button>
+      `;
+    } else {
+      html += `<div class="note" style="margin-top:0;">Game: <b>${fmtDate(selectedGameDate)}</b> &middot; ${active.length} player(s) available${existingEntry ? '' : ' \u2014 not saved yet'}</div>`;
+      if(lastWarning) html += `<div class="warn">${esc(lastWarning)}</div>`;
+      html += `<div class="row"><button class="ghost" id="regenBtn">Regenerate</button><button class="primary" id="saveBtn">Save Lineup</button></div>`;
+      html += `<div class="note" style="margin-top:10px;">${isGamePlayed(selectedGameDate)
+        ? '<b style="color:var(--field-dark);">Marked played</b> \u2014 this lineup counts toward season stats.'
+        : 'Not marked played yet \u2014 tick <b>Played</b> in the Attendance tab Schedule once the game happens to count this lineup toward season stats.'}</div>`;
+    }
+    html += `</div>`;
+
+    const details = peekGameDetails(selectedGameDate);
+    html += `<div class="card"><h2>Game Details</h2>
+      <div class="note">Included in the JPEG and text export for this date.</div>
+      <div class="note" style="margin-top:0;color:var(--field-dark);font-weight:600;">${(details.time||details.field) ? esc([details.time, details.field].filter(Boolean).join('  \u00b7  ')) : 'No time or field set yet'} <span style="font-weight:400;color:var(--ink-soft);">\u2014 time, field, scores, and Played are set on the Attendance tab Schedule</span></div>
+      <div class="settings-row">
+        <div><label>Opponent</label><input type="text" id="opponentInput" placeholder="Team name" value="${esc(details.opponent||'')}" style="width:200px;"></div>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <label class="ghost" style="display:inline-flex;align-items:center;padding:8px 14px;border-radius:4px;border:1px solid var(--field);cursor:pointer;font-family:'Oswald',sans-serif;font-weight:600;font-size:11px;text-transform:uppercase;color:var(--field-dark);">
+          ${details.mapImage ? 'Replace Park Map' : 'Upload Park Map'}<input type="file" id="mapUploadInput" accept="image/*" style="display:none;">
+        </label>
+        ${details.mapImage ? '<button class="small ghost" id="removeMapBtn">Remove Map</button>' : ''}
+      </div>
+      ${details.mapImage ? `<div style="margin-top:10px;"><img src="${details.mapImage}" style="max-width:260px;max-height:160px;border:1px solid var(--line);border-radius:4px;"></div>` : ''}
+    </div>`;
+
+    const activeForCard = activePlayersForDate(selectedGameDate);
+    const protectedSet = neverBenchByDate[selectedGameDate] || {};
+
+    html += `<div class="card"><h2>Never Bench This Game</h2>
+      <div class="note">A per-game choice, not permanent \u2014 checking someone here only applies to this specific date. It doesn't exempt them from ever sitting: it just means they're the last one asked, at whatever point the rotation reaches. Everyone still takes their fair first turn before anyone takes a second, protected or not \u2014 protection only decides who goes first when players are otherwise tied.</div>
+      <div class="row">`;
+    activeForCard.forEach(p=>{
+      const checked = !!protectedSet[p.id];
+      html += `<label style="font-size:12px;display:flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:4px;padding:5px 10px;background:var(--cream);">
+        <input type="checkbox" data-never-bench-date="${p.id}" ${checked?'checked':''}> ${esc(p.name)}
+      </label>`;
+    });
+    html += `</div></div>`;
+
+    if(currentGrid){
+      const drift = lineupDrift();
+      if(drift){
+        const bits = [];
+        if(drift.out.length) bits.push(`${esc(drift.out.map(playerName).join(', '))} ${drift.out.length>1?'are':'is'} out now`);
+        if(drift.added.length) bits.push(`${esc(drift.added.map(playerName).join(', '))} ${drift.added.length>1?'are':'is'} available but not in this lineup`);
+        html += `<div class="warn"><b>This lineup is out of step with who's available:</b> ${bits.join('; ')}.
+          <div class="row" style="margin-top:8px;"><button class="small" id="syncLineupBtn">Update lineup</button><span style="font-size:11px;">or tap Regenerate above for a fresh, balanced one.</span></div></div>`;
+      }
+      html += `<div class="card"><h2>Batting Order</h2>
+        <div class="row" style="margin-bottom:12px;"><button class="ghost" id="suggestBatBtn">Suggest by Skill</button></div>
+        <div class="note" style="margin-top:0;">Everyone kicks, in this order, regardless of who's benched in the field that inning.</div>
+        <ol class="batting-list" style="list-style:none;">`;
+      currentBattingOrder.forEach((id, idx)=>{
+        html += `<li>
+          <span class="num">${idx+1}.</span>
+          <span class="bname">${esc(playerName(id))}${lineupGhostIds().includes(id) ? ' <span class="badge bench">out</span>' : ''}</span>
+          <button class="small ghost" data-bat-up="${idx}" ${idx===0?'disabled':''}>&uarr;</button>
+          <button class="small ghost" data-bat-down="${idx}" ${idx===currentBattingOrder.length-1?'disabled':''}>&darr;</button>
+        </li>`;
+      });
+      html += `</ol></div>`;
+
+      // Options come from the full position list for this lineup, NOT from what's currently
+      // assigned in inning 1 \u2014 otherwise a position that gets vacated disappears from every
+      // dropdown and can't be picked again.
+      const optList = currentPosList.concat(['Bench']);
+      const chartInnings = currentGrid.length;
+      const vacancies = allVacancies();
+      html += `<div class="card"><h2>Fielding Chart</h2>
+        <div class="note">Each row is a player, each column an inning. Moving someone onto a position another player holds swaps the two of them. Setting a fielder to Bench leaves their position empty until you put someone there.</div>`;
+      if(vacancies.length){
+        html += `<div class="warn"><b>Empty position${vacancies.reduce((n,v)=>n+v.positions.length,0)>1?'s':''}:</b> ${vacancies.map(v=>`Inning ${v.inning} \u2014 ${esc(v.positions.join(', '))}`).join(' &nbsp;|&nbsp; ')}. Pick someone for ${vacancies.length>1||vacancies[0].positions.length>1?'each of these':'this'} from the dropdowns below (benched players can be moved in).</div>`;
+      }
+      html += `<div style="overflow-x:auto;"><table><tr><th style="text-align:left;">Player</th>`;
+      for(let i=0;i<chartInnings;i++){
+        const hasVacancy = vacantPositionsForInning(i).length > 0;
+        html += `<th${hasVacancy?' style="background:var(--ball);color:var(--on-ball);"':''}>Inning ${i+1}</th>`;
+      }
+      html += `</tr>`;
+      const chartPlayers = lineupGhostIds().map(id=>({id, name: playerName(id), ghost: true})).concat(active);
+      chartPlayers.forEach(p=>{
+        html += `<tr><td class="name-cell">${esc(p.name)}${p.ghost ? ' <span class="badge bench">out</span>' : ''}</td>`;
+        for(let i=0;i<chartInnings;i++){
+          const current = assignmentFor(p.id, i);
+          const posMap = currentGrid[i].positions;
+          html += `<td><select data-cell-player="${p.id}" data-cell-inning="${i}">`;
+          optList.forEach(opt=>{
+            let label = opt;
+            if(opt !== 'Bench' && opt !== current){
+              const holder = posMap[opt];
+              label = holder ? `${opt} \u21c4 ${playerName(holder)}` : `${opt} (empty)`;
+            }
+            html += `<option value="${esc(opt)}" ${opt===current?'selected':''}>${esc(label)}</option>`;
+          });
+          html += `</select></td>`;
+        }
+        html += `</tr>`;
+      });
+      html += `</table></div>`;
+      currentGrid.forEach((inning, idx)=>{
+        const bench = benchForInning(idx).map(playerName);
+        const vac = vacantPositionsForInning(idx);
+        html += `<div class="bench-line">Inning ${idx+1} bench: ${bench.length ? esc(bench.join(', ')) : 'none'}${vac.length ? ` <b style="color:var(--ball-text);">\u2014 empty: ${esc(vac.join(', '))}</b>` : ''}</div>`;
+      });
+      html += `<div class="row" style="margin-top:14px;"><button class="ghost" id="cancelWeekBtn">Discard &amp; Start Over</button></div>`;
+      html += `</div>`;
+
+      html += `<div class="card"><h2>Share With the Team</h2>
+        <div class="note">Export this lineup to send to the group \u2014 a JPEG image for a text/chat, or plain text to paste into an email.</div>
+        <div class="row">${canShareFiles() ? '<button class="primary" id="shareImgBtn">Share\u2026</button>' : ''}<button class="${canShareFiles() ? 'ghost' : 'primary'}" id="exportImgBtn">Download as JPEG</button><button class="ghost" id="copyTextBtn">Copy as Text</button></div>
+      </div>`;
+    }
+
+    if(lastSaveMsg){
+      html += `<div class="confirm">${esc(lastSaveMsg)}</div>`;
+    }
+    if(weekLog.length){
+      html += `<div class="card"><h2>Saved Lineups (${weekLog.length})</h2>`;
+      weekLog.slice().sort((a,b)=> (a.gameDate||'').localeCompare(b.gameDate||'')).forEach(w=>{
+        html += `<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--line);padding:8px 0;">
+          <span>${esc(w.label)}</span>
+          <span class="row" style="gap:10px;">
+            <span class="badge${isGamePlayed(w.gameDate)?'':' bench'}">${isGamePlayed(w.gameDate)?'Played':'Not played'}</span>
+            <button class="small ghost" data-load-week="${w.gameDate}">Load</button>
+          </span>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+    return html;
+  }
+
+  function renderRoster(){
+    let html = `<div class="card"><h2>Add a Player</h2>
+      <div class="row">
+        <input type="text" id="newPlayerName" placeholder="Player name">
+        <button class="primary" id="addPlayerBtn">Add</button>
+      </div>
+    </div>`;
+
+    html += `<div class="card"><h2>Roster (${roster.length})</h2>`;
+    if(roster.length===0){
+      html += `<div class="empty">No players yet \u2014 add your team above.</div>`;
+    } else {
+      html += `<div class="roster-list">`;
+      roster.forEach(p=>{
+        html += `<div class="roster-item ${p.active?'':'inactive'}">
+          <input type="text" value="${esc(p.name)}" data-rename="${p.id}" style="flex:1;">
+          <span class="badge ${p.active?'':'bench'}">${p.active?'Active':'Inactive'}</span>
+          <button class="small ghost" data-toggle="${p.id}">${p.active?'Set Inactive':'Set Active'}</button>
+          <button class="small ghost" data-remove="${p.id}">Remove</button>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+    html += `<div class="note" style="margin-top:12px;">Inactive players are skipped when generating a lineup (out sick, on vacation, etc.) but keep their stats. "Never Bench" is set per game now, not here \u2014 see the This Week tab.</div></div>`;
+
+    html += `<div class="card"><h2>Fielding Positions</h2>
+      <div class="note">Default kickball set shown below. Edit the list to match your league (e.g. add a 4th outfielder).</div>
+      <div class="row">`;
+    positions.forEach((pos, idx)=>{
+      html += `<input type="text" value="${esc(pos)}" data-position="${idx}" style="width:100px;">`;
+    });
+    html += `<button class="small ghost" id="addPositionBtn">+ Position</button>
+      </div>
+    </div>`;
+
+    html += `<div class="card"><h2>Backup &amp; Restore</h2>
+      <div class="note">This tool saves everything in this browser only \u2014 it won't follow you to a different computer or browser on its own. Download a backup here, and import it on another machine to pick up right where you left off.</div>
+      <div class="row">
+        <button class="primary" id="exportBackupBtn">Download Backup</button>
+        <label class="ghost" style="display:inline-flex;align-items:center;padding:9px 16px;border-radius:4px;border:1px solid var(--field);cursor:pointer;font-family:'Oswald',sans-serif;font-weight:600;font-size:12px;text-transform:uppercase;color:var(--field-dark);">
+          Import Backup<input type="file" id="importBackupInput" accept=".json,application/json,text/json,text/plain" style="display:none;">
+        </label>
+      </div>
+      <div class="note" style="margin-top:10px;">Download Backup includes every season. Importing a backup made by this version replaces ALL seasons in this browser. Importing an older single-season backup replaces only the season you're currently in and leaves the others alone. Worth downloading a fresh backup first if you're not sure.</div>
+    </div>`;
+
+    return html;
+  }
+
+  function renderSkills(){
+    let html = `<div class="card"><h2>Preferred Positions \u2014 Coach Only</h2>
+      <div class="note">Rank up to 3 positions per player. The generator scores every candidate for a spot as skill-fit (Catching+Running for outfield, Throwing+Decision Making for infield/Pitcher/Catcher) plus a bonus for preference (1st choice +3, 2nd +2, 3rd +1) \u2014 highest combined score gets the position. Ties are broken by keeping a player where they've played before, then by fairness catch-up. Left/Right Center Field share one "Center Outfield" choice, and Left/Right Field share one "Corner Outfield" choice \u2014 side is picked automatically since it doesn't matter.</div>`;
+    if(!skillsRevealed){
+      html += `<button class="primary" id="revealSkillsBtn">Reveal Ratings</button>`;
+      html += `</div>`;
+      return html;
+    }
+    html += `<button class="ghost" id="hideSkillsBtn">Hide Ratings</button></div>`;
+
+    if(roster.length===0){
+      return html + `<div class="card"><div class="empty">Add players on the Roster tab first.</div></div>`;
+    }
+    const cols = preferenceColumns();
+    html += `<div class="card"><div style="overflow-x:auto;"><table><tr><th style="text-align:left;">Player</th><th>1st Choice</th><th>2nd Choice</th><th>3rd Choice</th></tr>`;
+    roster.forEach(p=>{
+      const map = preferredPositions[p.id] || {};
+      html += `<tr><td class="name-cell">${esc(p.name)}</td>`;
+      for(let r=1; r<=3; r++){
+        const current = map[r] || 'None';
+        html += `<td><select data-rank-player="${p.id}" data-rank="${r}">`;
+        html += `<option value="None" ${current==='None'?'selected':''}>\u2014</option>`;
+        cols.forEach(pos=>{
+          html += `<option value="${esc(pos)}" ${pos===current?'selected':''}>${esc(pos)}</option>`;
+        });
+        html += `</select></td>`;
+      }
+      html += `</tr>`;
+    });
+    html += `</table></div></div>`;
+
+    html += `<div class="card"><h2>Positions to Avoid \u2014 Coach Only</h2>
+      <div class="note">Hard blocks, not preferences \u2014 checked positions are never assigned to that player, even if a related spot is their preferred choice (e.g. "Center Outfield" preferred but RCF specifically excluded). Listed individually, side by side, so you can control exactly which side of the outfield \u2014 or which infield spot \u2014 someone should stay off of. Only overridden if there's truly no legal alternative left for a slot, which the tool will flag if it happens.</div>
+      <div style="overflow-x:auto;"><table><tr><th style="text-align:left;">Player</th>`;
+    positions.forEach(pos=> html += `<th>${esc(pos)}</th>`);
+    html += `</tr>`;
+    roster.forEach(p=>{
+      const excl = excludedPositions[p.id] || [];
+      html += `<tr><td class="name-cell">${esc(p.name)}</td>`;
+      positions.forEach(pos=>{
+        const checked = excl.includes(pos);
+        html += `<td><input type="checkbox" data-exclude-player="${p.id}" data-exclude-pos="${esc(pos)}" ${checked?'checked':''}></td>`;
+      });
+      html += `</tr>`;
+    });
+    html += `</table></div></div>`;
+
+    html += `<div class="card"><h2>General Skills \u2014 Coach Only</h2>
+      <div class="note">Player-level attributes. Catching, Running, Throwing, and Decision Making now feed directly into position assignment above (see the Preferred Positions note for the formula). Big Kicks and Running/Decision Making also drive "Suggest by Skill" on the This Week tab \u2014 spreading Big Kicks players evenly through the batting order (never leadoff) with your best on-base players slotted in front of each one. Bunts is here for your reference and doesn't currently drive any automation.</div>
+      <div style="overflow-x:auto;"><table><tr><th style="text-align:left;">Player</th>`;
+    GENERAL_SKILLS.forEach(sk=> html += `<th>${esc(sk)}</th>`);
+    html += `</tr>`;
+    roster.forEach(p=>{
+      html += `<tr><td class="name-cell">${esc(p.name)}</td>`;
+      GENERAL_SKILLS.forEach(sk=>{
+        const val = generalSkillFor(p.id, sk);
+        html += `<td><select data-genskill-player="${p.id}" data-genskill-name="${esc(sk)}" style="width:60px;">`;
+        [1,2,3,4,5].forEach(n=>{
+          html += `<option value="${n}" ${n===val?'selected':''}>${n}</option>`;
+        });
+        html += `</select></td>`;
+      });
+      html += `</tr>`;
+    });
+    html += `</table></div></div>`;
+    return html;
+  }
+
+  function renderAttendance(){
+    let html = `<div class="card"><h2>Schedule</h2>
+      <div class="note">Each game's date, time, field, opponent, score, and whether it's been played \u2014 all in one place. Time, field, and opponent feed that date's Game Details on the This Week tab and the JPEG/text export. Mark players absent in the grid below and the This Week tab leaves them out of that date's lineup automatically.</div>
+      <div class="row" style="margin-bottom:12px;">
+        <input type="date" id="addDateInput">
+        <button class="small ghost" id="addDateBtn">+ Add Date</button>
+      </div>`;
+
+    if(scheduleDates.length){
+      html += `<div style="overflow-x:auto;"><table><tr><th style="text-align:left;">Date</th><th style="text-align:left;">Time</th><th style="text-align:left;">Field</th><th style="text-align:left;">Opponent</th><th>Our Score</th><th>Their Score</th><th>Result</th><th>Played</th></tr>`;
+      scheduleDates.forEach(d=>{
+        const gd = gameDetails[d] || {};
+        const res = gameResult(gd);
+        const resBadge = res ? `<span class="badge" style="background:${res==='W'?'var(--field)':res==='L'?'var(--ball)':'var(--ink-soft)'};${res==='L'?'color:var(--on-ball);':''}">${res==='W'?'Win':res==='L'?'Loss':'Tie'}</span>` : '<span style="color:var(--ink-soft);">\u2014</span>';
+        const sv = v => (v===null||v===undefined) ? '' : v;
+        html += `<tr>
+          <td style="text-align:left;">${fmtDate(d)}</td>
+          <td style="text-align:left;"><input type="text" data-schedule-time="${d}" value="${esc(gd.time||'')}" placeholder="6:00 PM" style="width:100px;"></td>
+          <td style="text-align:left;"><input type="text" data-schedule-field="${d}" value="${esc(gd.field||'')}" placeholder="Field 3" style="width:130px;"></td>
+          <td style="text-align:left;"><input type="text" data-schedule-opponent="${d}" value="${esc(gd.opponent||'')}" placeholder="Team name" style="width:180px;"></td>
+          <td><input type="number" min="0" data-schedule-our="${d}" value="${sv(gd.ourScore)}" style="width:64px;"></td>
+          <td><input type="number" min="0" data-schedule-their="${d}" value="${sv(gd.theirScore)}" style="width:64px;"></td>
+          <td>${resBadge}</td>
+          <td><input type="checkbox" data-schedule-played="${d}" ${gd.played?'checked':''}></td>
+        </tr>`;
+      });
+      html += `</table></div>`;
+      const scoredNotPlayed = scheduleDates.filter(d=> gameResult(gameDetails[d]||{})!==null && !isGamePlayed(d));
+      html += `<div class="note" style="margin-top:10px;">Ticking <b>Played</b> is what adds that game's saved lineup to the season fairness stats \u2014 entering a score doesn't do it on its own.${scoredNotPlayed.length ? ` <b style="color:var(--ball);">Heads up: ${scoredNotPlayed.map(fmtDate).join(', ')} ${scoredNotPlayed.length>1?'have scores but aren\'t':'has a score but isn\'t'} ticked Played yet.</b>` : ''}</div>`;
+    }
+    html += `</div>`;
+
+    if(scheduleDates.length === 0 || roster.length === 0){
+      html += `<div class="card"><div class="empty">${roster.length===0 ? 'Add players on the Roster tab first.' : 'No game dates scheduled yet \u2014 add one above.'}</div></div>`;
+      return html;
+    }
+
+    html += `<div class="card"><h2>Mark Absences</h2><div style="overflow-x:auto;"><table><tr><th style="text-align:left;">Player</th>`;
+    scheduleDates.forEach(d=>{
+      const played = isGamePlayed(d);
+      html += `<th>${fmtDate(d)}${played?'<br><span style="font-size:9px;opacity:0.7;">played</span>':''} <button class="small ghost" data-remove-date="${d}" style="margin-top:4px;padding:2px 5px;">&times;</button></th>`;
+    });
+    html += `</tr>`;
+    roster.filter(p=>p.active).forEach(p=>{
+      html += `<tr><td class="name-cell">${esc(p.name)}</td>`;
+      scheduleDates.forEach(d=>{
+        const absent = !!(attendance[d] && attendance[d][p.id]);
+        html += `<td><input type="checkbox" data-att-player="${p.id}" data-att-date="${d}" ${absent?'checked':''}></td>`;
+      });
+      html += `</tr>`;
+    });
+    html += `</table></div><div class="note" style="margin-top:10px;">Checked = known absence for that date. Inactive players (Roster tab) aren't shown here since they're already excluded from every lineup.</div></div>`;
+    return html;
+  }
+
+  function renderPlayerCards(){
+    let html = `<div class="card"><h2>Player Cards</h2>
+      <div class="note">Upload a photo and write a tagline for each player, then download a trading-card style image \u2014 good for a team roster page, a group chat, or just for fun. This is a first pass; tell me what to change about the look.</div>
+    </div>`;
+
+    if(roster.length===0){
+      return html + `<div class="card"><div class="empty">Add players on the Roster tab first.</div></div>`;
+    }
+
+    roster.forEach(p=>{
+      const card = peekPlayerCard(p.id);
+      html += `<div class="card">
+        <div class="row" style="align-items:flex-start;gap:16px;">
+          <div style="flex:none;">
+            ${card.photo ? `<img src="${card.photo}" style="width:90px;height:90px;object-fit:cover;border-radius:4px;border:1px solid var(--line);">` : `<div style="width:90px;height:90px;border-radius:4px;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--ink-soft);text-align:center;">No photo</div>`}
+          </div>
+          <div style="flex:1;min-width:200px;">
+            <div style="font-family:'Oswald',sans-serif;font-weight:600;margin-bottom:8px;">${esc(p.name)}</div>
+            <div class="row" style="margin-bottom:8px;">
+              <label class="ghost" style="display:inline-flex;align-items:center;padding:6px 12px;border-radius:4px;border:1px solid var(--field);cursor:pointer;font-family:'Oswald',sans-serif;font-weight:600;font-size:11px;text-transform:uppercase;color:var(--field-dark);">
+                ${card.photo ? 'Replace Photo' : 'Upload Photo'}<input type="file" data-card-photo="${p.id}" accept="image/*" style="display:none;">
+              </label>
+              ${card.photo ? `<button class="small ghost" data-card-remove-photo="${p.id}">Remove Photo</button>` : ''}
+            </div>
+            <input type="text" data-card-tagline="${p.id}" value="${esc(card.tagline||'')}" placeholder="Tagline (e.g. 'The Wall', 'Speed Demon')" style="width:100%;max-width:320px;margin-bottom:8px;">
+            <div class="row">${canShareFiles() ? `<button class="primary small" data-card-share="${p.id}">Share\u2026</button>` : ''}<button class="${canShareFiles() ? 'ghost' : 'primary'} small" data-card-download="${p.id}">Download Card</button></div>
+          </div>
+        </div>
+      </div>`;
+    });
+    return html;
+  }
+
+  // ---------- Game Stats helpers ----------
+  const MIN_GAMES_FOR_SWING = 2; // need at least this many games in BOTH the present and absent groups
+
+  function scoredGames(){
+    // One entry per scheduled game that has both scores entered, in date order. "Who was
+    // there" comes from the saved lineup for that date when there is one (it's the record
+    // of who actually played); otherwise it falls back to the Attendance marks.
+    const out = [];
+    scheduleDates.slice().sort().forEach(d=>{
+      const det = gameDetails[d];
+      if(!det) return;
+      const result = gameResult(det);
+      if(result === null) return;
+      const entry = weekLog.find(w=>w.gameDate===d && w.activeIds);
+      let ids, source;
+      if(entry){
+        ids = entry.activeIds.slice();
+        source = 'Lineup';
+      } else {
+        const absent = attendance[d] || {};
+        ids = roster.filter(p=>p.active && !absent[p.id]).map(p=>p.id);
+        source = 'Attendance';
+      }
+      out.push({
+        date: d,
+        details: det,
+        result,
+        runDiff: Number(det.ourScore) - Number(det.theirScore),
+        present: new Set(ids),
+        source
+      });
+    });
+    return out;
+  }
+
+  function summarizeGames(list){
+    // Ties count as half a win for win%.
+    let w=0, l=0, t=0, diff=0;
+    list.forEach(g=>{
+      if(g.result==='W') w++; else if(g.result==='L') l++; else t++;
+      diff += g.runDiff;
+    });
+    const n = list.length;
+    return {n, w, l, t, winPct: n ? (w + 0.5*t)/n : null, avgDiff: n ? diff/n : null};
+  }
+  function fmtRecord(s){ return s.n ? `${s.w}-${s.l}${s.t ? '-'+s.t : ''}` : '\u2014'; }
+  function fmtPct(p){ return p===null ? '\u2014' : Math.round(p*100) + '%'; }
+  function fmtSigned(x, digits){
+    if(x===null || x===undefined) return '\u2014';
+    const v = Number(x.toFixed(digits));
+    return (v>0 ? '+' : '') + v;
+  }
+  function statCell(s){
+    if(!s.n) return '<span style="color:var(--ink-soft);">0 games</span>';
+    return `<b>${s.n}</b> gm &middot; ${fmtRecord(s)} &middot; ${fmtPct(s.winPct)} &middot; ${fmtSigned(s.avgDiff,1)}`;
+  }
+
+  function renderGameStats(){
+    const games = scoredGames();
+    let html = `<div class="card"><h2>Season Record</h2>`;
+    if(games.length===0){
+      html += `<div class="empty">No scores entered yet \u2014 add them on the This Week tab's Game Details section once a game's played.</div></div>`;
+      return html;
+    }
+    const all = summarizeGames(games);
+    html += `<div class="note" style="font-size:16px;font-weight:600;color:var(--field-dark);">${all.w}-${all.l}${all.t?'-'+all.t:''} <span style="font-size:12px;font-weight:400;color:var(--ink-soft);">(${all.w} win${all.w!==1?'s':''}, ${all.l} loss${all.l!==1?'es':''}${all.t?`, ${all.t} tie${all.t!==1?'s':''}`:''}) &middot; average run differential ${fmtSigned(all.avgDiff,1)} per game</span></div>`;
+    const attendanceGames = games.filter(g=>g.source==='Attendance');
+    if(attendanceGames.length){
+      html += `<div class="note" style="margin-top:8px;">${attendanceGames.length} of these games ${attendanceGames.length!==1?'have':'has'} a score but no saved lineup, so who was there comes from your Attendance marks instead (flagged in the games table below).</div>`;
+    }
+    html += `</div>`;
+
+    const expected = roster.filter(p=>p.active);
+
+    // ---- Per-player: record with vs. without ----
+    const rows = expected.map(p=>{
+      const sp = summarizeGames(games.filter(g=>g.present.has(p.id)));
+      const sa = summarizeGames(games.filter(g=>!g.present.has(p.id)));
+      const enough = sp.n >= MIN_GAMES_FOR_SWING && sa.n >= MIN_GAMES_FOR_SWING;
+      return {
+        p, sp, sa, enough,
+        pctSwing: enough ? sp.winPct - sa.winPct : null,
+        diffSwing: enough ? sp.avgDiff - sa.avgDiff : null
+      };
+    });
+    rows.sort((a,b)=>{
+      if(a.enough !== b.enough) return a.enough ? -1 : 1;
+      if(a.enough) return (b.pctSwing - a.pctSwing) || (b.diffSwing - a.diffSwing);
+      return a.p.name.localeCompare(b.p.name);
+    });
+
+    const tableRows = rows.filter(r=>r.sa.n > 0 || r.sp.n === 0);   // anyone with something to compare
+    const neverMissed = rows.filter(r=>r.sa.n === 0 && r.sp.n > 0);  // there for every scored game so far
+    html += `<div class="card"><h2>With vs. Without Each Player</h2>
+      <div class="note">${games.length} scored game${games.length!==1?'s':''} so far. Each cell reads: games &middot; record &middot; win% &middot; average run differential (runs scored minus runs allowed). Ties count as half a win. The swing is the difference between the two \u2014 positive means the team does better when that player's there. It's only shown once there are at least ${MIN_GAMES_FOR_SWING} games in both columns; before that it's marked "not enough data" instead of showing a percentage that means nothing yet. Even then, treat it as a pattern to watch, not proof \u2014 opponent strength, weather, and who else was out all move these numbers too.</div>`;
+    if(tableRows.length){
+      html += `<div style="overflow-x:auto;"><table><tr><th style="text-align:left;">Player</th><th>When present</th><th>When absent</th><th>Swing</th></tr>`;
+      tableRows.forEach(r=>{
+        let swing;
+        if(r.enough){
+          const pts = Math.round(r.pctSwing*100);
+          const good = pts > 0 || (pts === 0 && r.diffSwing > 0);
+          const bad = pts < 0 || (pts === 0 && r.diffSwing < 0);
+          const color = good ? 'var(--field-dark)' : bad ? 'var(--ball-text)' : 'var(--ink-soft)';
+          swing = `<span style="color:${color};font-weight:600;">${pts>0?'+':''}${pts} pts win% &middot; ${fmtSigned(r.diffSwing,1)} runs/game</span>`;
+        } else if(r.sp.n === 0){
+          swing = '<span style="color:var(--ink-soft);">hasn\'t played a scored game</span>';
+        } else {
+          swing = '<span style="color:var(--ink-soft);">not enough data</span>';
+        }
+        html += `<tr><td class="name-cell">${esc(r.p.name)}</td><td>${statCell(r.sp)}</td><td>${statCell(r.sa)}</td><td>${swing}</td></tr>`;
+      });
+      html += `</table></div>`;
+    } else {
+      html += `<div class="empty" style="padding:12px;">Everyone has been there for every scored game so far, so there's nothing to compare yet.</div>`;
+    }
+    if(neverMissed.length){
+      const s = summarizeGames(games);
+      html += `<div class="note" style="margin-top:12px;"><b>Never missed a scored game</b> (nothing to compare yet \u2014 the team's record with them is just the season record, ${fmtRecord(s)}): ${esc(neverMissed.map(r=>r.p.name).join(', '))}.</div>`;
+    }
+    html += `</div>`;
+
+    // ---- Core group: team results by how many of the core were there ----
+    const core = expected.filter(p=>coreGroup[p.id]);
+    html += `<div class="card"><h2>Core Group</h2>
+      <div class="note">Pick the players you'd call your core. Below, every scored game is sorted by how many of them were there, so you can see whether the team really does worse when several are out at once \u2014 which single-player numbers can miss. This is your own call; nothing here reads your private skill ratings.</div>
+      <div class="row" style="margin-bottom:12px;">`;
+    expected.forEach(p=>{
+      html += `<label style="font-size:12px;display:flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:4px;padding:5px 10px;background:var(--cream);">
+        <input type="checkbox" data-core-player="${p.id}" ${coreGroup[p.id]?'checked':''}> ${esc(p.name)}
+      </label>`;
+    });
+    html += `</div>`;
+    if(core.length === 0){
+      html += `<div class="empty" style="padding:12px;">Check at least one player above to see how the team does with the core there or out.</div>`;
+    } else {
+      const outCount = g => core.filter(p=>!g.present.has(p.id)).length;
+      const half = core.length / 2;
+      const buckets = [
+        {label: `All ${core.length} there`, list: games.filter(g=>outCount(g)===0)},
+        {label: 'Some out (up to half)', list: games.filter(g=>{ const o = outCount(g); return o>=1 && o<=half; })},
+        {label: 'Most out (more than half)', list: games.filter(g=>outCount(g)>half)}
+      ];
+      html += `<table><tr><th style="text-align:left;">Core players</th><th>Games</th><th>Record</th><th>Win%</th><th>Avg run diff</th></tr>`;
+      buckets.forEach(b=>{
+        const s = summarizeGames(b.list);
+        html += `<tr><td class="name-cell">${esc(b.label)}</td><td>${s.n}</td><td>${fmtRecord(s)}</td><td>${fmtPct(s.winPct)}</td><td>${fmtSigned(s.avgDiff,1)}</td></tr>`;
+      });
+      html += `</table>`;
+    }
+    html += `</div>`;
+
+    // ---- Game by game ----
+    const showCore = core.length > 0;
+    html += `<div class="card"><h2>Games</h2><div style="overflow-x:auto;"><table><tr><th>Date</th><th>Opponent</th><th>Score</th><th>Result</th><th>Run diff</th><th>Out</th><th style="text-align:left;">Who was out</th>${showCore?'<th>Core out</th>':''}<th>Source</th></tr>`;
+    games.forEach(g=>{
+      const badgeColor = g.result==='W' ? 'var(--field)' : g.result==='L' ? 'var(--ball)' : 'var(--ink-soft)';
+      const resultLabel = g.result==='W' ? 'Win' : g.result==='L' ? 'Loss' : 'Tie';
+      const out = expected.filter(p=>!g.present.has(p.id));
+      const coreOut = core.filter(p=>!g.present.has(p.id)).length;
+      html += `<tr>
+        <td>${fmtDate(g.date)}</td>
+        <td class="name-cell">${esc(g.details.opponent || '\u2014')}</td>
+        <td>${g.details.ourScore} - ${g.details.theirScore}</td>
+        <td><span class="badge" style="background:${badgeColor};${g.result==='L'?'color:var(--on-ball);':''}">${resultLabel}</span></td>
+        <td>${fmtSigned(g.runDiff,0)}</td>
+        <td>${out.length}</td>
+        <td style="text-align:left;">${out.length ? esc(out.map(p=>p.name).join(', ')) : '<span style="color:var(--ink-soft);">everyone there</span>'}</td>
+        ${showCore ? `<td>${coreOut}/${core.length}</td>` : ''}
+        <td style="font-size:10px;color:var(--ink-soft);">${g.source}</td>
+      </tr>`;
+    });
+    html += `</table></div></div>`;
+    return html;
+  }
+
+  function renderTeam(){
+    const th = themeFor();
+    let html = '';
+    if(teamMsg) html += `<div class="confirm">${esc(teamMsg)}</div>`;
+    const label = txt => `<div style="font-family:'Oswald',sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;color:var(--field-dark);margin:16px 0 6px;">${txt}</div>`;
+    html += `<div class="card"><h2>Team</h2>
+      <div class="note">Your team's name and logo show up in the page header, the browser tab, the lineup JPEG, the text export, and on every player card. They belong to the team, not a season, so they stay put when you start a new one.</div>
+      <div class="settings-row"><div><label>Team name</label><input type="text" id="teamName" maxlength="40" placeholder="e.g. The Sluggers" value="${esc(team.name)}" style="width:280px;"></div></div>
+
+      ${label('Logo')}
+      <div class="row" style="align-items:center;gap:18px;">
+        ${team.logo
+          ? `<img src="${team.logo}" alt="Team logo" style="height:104px;max-width:220px;object-fit:contain;background:var(--cream);border:1px solid var(--line);border-radius:12px;padding:8px;">`
+          : `<div style="width:104px;height:104px;border:1px dashed var(--line);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--ink-soft);text-align:center;">No logo yet</div>`}
+        <div>
+          <div class="row" style="margin-bottom:8px;">
+            <label class="ghost" style="display:inline-flex;align-items:center;padding:8px 14px;border-radius:4px;border:1px solid var(--field);cursor:pointer;font-family:'Oswald',sans-serif;font-weight:600;font-size:11px;text-transform:uppercase;color:var(--field-dark);">
+              ${team.logo ? 'Replace Logo' : 'Upload Logo'}<input type="file" id="teamLogoInput" accept="image/*" style="display:none;">
+            </label>
+            ${team.logo ? '<button class="small ghost" id="teamRemoveLogoBtn">Remove Logo</button>' : ''}
+          </div>
+          <div class="note" style="margin:0;max-width:340px;">A PNG with a transparent background looks best. Large images are shrunk automatically.</div>
+        </div>
+      </div>
+
+      ${label('Colors')}
+      <div class="row" style="align-items:flex-end;gap:18px;margin-bottom:8px;">
+        <div><label style="font-size:11px;text-transform:uppercase;font-family:'Oswald',sans-serif;color:var(--ink-soft);display:block;margin-bottom:4px;">Main color</label><input type="color" id="teamPrimary" value="${th.field}" style="width:64px;height:38px;padding:2px;border:1px solid var(--line);border-radius:4px;background:var(--cream);cursor:pointer;"></div>
+        <div><label style="font-size:11px;text-transform:uppercase;font-family:'Oswald',sans-serif;color:var(--ink-soft);display:block;margin-bottom:4px;">Accent color</label><input type="color" id="teamAccent" value="${th.ball}" style="width:64px;height:38px;padding:2px;border:1px solid var(--line);border-radius:4px;background:var(--cream);cursor:pointer;"></div>
+        ${team.logo ? '<button class="ghost" id="teamLogoColorsBtn">Use colors from my logo</button>' : ''}
+        <button class="ghost" id="teamResetColorsBtn">Reset colors</button>
+      </div>
+      <div class="note" style="margin:0;">The main color drives the header, tabs, and buttons; the accent is for highlights and the main action buttons. Text colors switch automatically so everything stays readable, even on a light team color. Exports and player cards use the same colors.</div>
+    </div>`;
+    return html;
+  }
+
+  function renderSeasons(){
+    let html = '';
+    if(seasonMsg) html += `<div class="confirm">${esc(seasonMsg)}</div>`;
+
+    html += `<div class="card"><h2>Seasons</h2>
+      <div class="note">Each season keeps its own schedule, scores, attendance, and saved lineups. Switch between them any time \u2014 nothing is lost when you do. Player photos and taglines are shared across seasons.</div>
+      <div style="overflow-x:auto;"><table><tr><th style="text-align:left;">Season</th><th>Dates</th><th>Played</th><th>Record</th><th>Active players</th><th></th></tr>`;
+    seasonsMeta.list.forEach(s=>{
+      const isCur = s.id === seasonsMeta.currentId;
+      let sum = null;
+      if(isCur){ const snap = getSnapshot(); sum = seasonSummaryFrom(snap.config, snap.progress); }
+      else { const snap = loadSeasonSnapshot(s.id); if(snap) sum = seasonSummaryFrom(snap.config || {}, snap.progress || {}); }
+      const dates = sum && sum.first ? `${fmtDate(sum.first)} \u2013 ${fmtDate(sum.last)} ${sum.first.slice(0,4)}` : '\u2014';
+      html += `<tr>
+        <td style="text-align:left;"><input type="text" data-season-rename="${s.id}" value="${esc(s.name)}" style="width:170px;"></td>
+        <td>${dates}</td>
+        <td>${sum ? `${sum.played} of ${sum.games}` : '\u2014'}</td>
+        <td>${sum && sum.scored ? `${sum.w}-${sum.l}${sum.t?'-'+sum.t:''}` : '\u2014'}</td>
+        <td>${sum ? sum.players : '\u2014'}</td>
+        <td>${isCur
+          ? '<span class="badge">Current</span>'
+          : `<button class="small ghost" data-season-switch="${s.id}">Switch to</button> <button class="small ghost" data-season-delete="${s.id}">Delete</button>`}</td>
+      </tr>`;
+    });
+    html += `</table></div></div>`;
+
+    const d = newSeasonDraft;
+    if(!d.open){
+      html += `<div class="card"><h2>New Season</h2>
+        <div class="note">Start the next season with a fresh schedule and records. ${esc(currentSeason().name)} is saved exactly as it is, and you choose below what carries over: returning players, ratings, and each player's stats. New players can be added right here.</div>
+        <button class="primary" id="nsOpenBtn">New Season\u2026</button></div>`;
+      return html;
+    }
+
+    html += `<div class="card"><h2>New Season</h2>
+      <div class="note">${esc(currentSeason().name)} will be saved as it is. Scores, schedule, attendance, and saved lineups stay with it; the choices below decide what the new season starts with.</div>
+      <div class="settings-row">
+        <div><label>Season name</label><input type="text" id="nsName" placeholder="e.g. Spring 2027" value="${esc(d.name)}" style="width:200px;"></div>
+        <div><label>First game date</label><input type="date" id="nsFirstDate" value="${esc(d.firstDate)}"></div>
+        <div><label>Number of games</label><input type="number" id="nsNumGames" min="1" max="40" value="${esc(String(d.numGames))}" style="width:90px;"></div>
+      </div>
+      <div class="note" style="margin-top:0;">Games are scheduled weekly from the first date. Leave these blank to add dates yourself later on the Attendance tab.</div>
+
+      <div style="font-family:'Oswald',sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;color:var(--field-dark);margin:14px 0 6px;">Returning players</div>
+      <div class="note" style="margin-top:0;">Anyone left unchecked stays on the roster as inactive, with their history, so you can bring them back later.</div>
+      <div class="row" style="margin-bottom:12px;">`;
+    roster.forEach(p=>{
+      html += `<label style="font-size:12px;display:flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:4px;padding:5px 10px;background:var(--cream);">
+        <input type="checkbox" data-ns-returning="${p.id}" ${d.returning[p.id]?'checked':''}> ${esc(p.name)}
+      </label>`;
+    });
+    html += `</div>
+
+      <div style="font-family:'Oswald',sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;color:var(--field-dark);margin:14px 0 6px;">Add new players</div>
+      <textarea id="nsNewPlayers" rows="3" placeholder="One name per line" style="width:100%;max-width:320px;font-family:'JetBrains Mono',monospace;font-size:13px;border:1px solid var(--line);border-radius:4px;padding:8px 10px;background:var(--cream);color:var(--ink);">${esc(d.newPlayers)}</textarea>
+
+      <div style="font-family:'Oswald',sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;color:var(--field-dark);margin:14px 0 6px;">Carry over</div>
+      <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;margin-bottom:14px;">
+        <label style="display:flex;align-items:flex-start;gap:6px;"><input type="checkbox" id="nsCarryRatings" ${d.carryRatings?'checked':''}> <span><b>Skill ratings and position choices</b> \u2014 general skills, ranked preferred positions, and positions to avoid</span></label>
+        <label style="display:flex;align-items:flex-start;gap:6px;"><input type="checkbox" id="nsCarryStats" ${d.carryStats?'checked':''}> <span><b>Each player's stats</b> \u2014 games, innings fielded and benched, positions played, and where they are in the bench rotation. Position history keeps players in spots they know; this season's fairness report still starts fresh.</span></label>
+        <label style="display:flex;align-items:flex-start;gap:6px;"><input type="checkbox" id="nsCarryCore" ${d.carryCore?'checked':''}> <span><b>Core group</b> for Game Stats</span></label>
+      </div>
+      <div class="row"><button class="primary" id="nsCreateBtn">Create Season</button><button class="ghost" id="nsCancelBtn">Cancel</button></div>
+    </div>`;
+    return html;
+  }
+
+  function renderFairness(){
+    const all = roster;
+    if(all.length===0){
+      return `<div class="card"><div class="empty">Add players on the Roster tab to start tracking fairness.</div></div>`;
+    }
+    const statsNow = computeStats();
+    const rows = all.map(p=>{
+      const s = statsNow[p.id] || {games:0, inningsFielded:0, inningsBenched:0, positions:{}};
+      return {id:p.id, name:p.name, active:p.active, ...s};
+    });
+    const playedList = rows.filter(r=>r.games>0).map(r=>r.inningsFielded);
+    const avg = playedList.length ? playedList.reduce((a,b)=>a+b,0)/playedList.length : 0;
+    const maxFielded = Math.max(1, ...rows.map(r=>r.inningsFielded));
+
+    let html = `<div class="card"><h2>Season Fairness</h2>
+      <div class="note">Team average innings fielded so far: <b>${avg.toFixed(1)}</b>. Only games ticked Played in the Attendance tab Schedule count toward these numbers \u2014 saving a lineup ahead of time doesn't affect fairness math until the game actually happens. Bars below average are flagged; the generator already prioritizes those players automatically.</div>
+      <table><tr><th>Player</th><th>Games</th><th>Innings Fielded</th><th>Innings Benched</th><th>Relative</th></tr>`;
+    rows.sort((a,b)=> a.inningsFielded-b.inningsFielded).forEach(r=>{
+      const below = r.games>0 && r.inningsFielded < avg;
+      const pct = Math.round((r.inningsFielded/maxFielded)*100);
+      html += `<tr>
+        <td class="name-cell">${esc(r.name)}${r.active?'':' <span class="badge bench">inactive</span>'}</td>
+        <td>${r.games}</td>
+        <td>${r.inningsFielded}</td>
+        <td>${r.inningsBenched}</td>
+        <td style="min-width:120px;"><div class="bar-track ${below?'fair-below':''}"><div class="bar-fill" style="width:${pct}%;"></div></div></td>
+      </tr>`;
+    });
+    html += `</table></div>`;
+
+    html += `<div class="card"><h2>Position Variety</h2><div style="overflow-x:auto;"><table><tr><th>Player</th>`;
+    positions.forEach(pos=> html += `<th>${esc(pos)}</th>`);
+    html += `</tr>`;
+    rows.forEach(r=>{
+      html += `<tr><td class="name-cell">${esc(r.name)}</td>`;
+      positions.forEach(pos=>{
+        html += `<td>${(r.positions && r.positions[pos]) || 0}</td>`;
+      });
+      html += `</tr>`;
+    });
+    html += `</table></div></div>`;
+
+    if(Object.keys(baseline).length){
+      const career = computeCareerStats();
+      const careerRows = roster.filter(p=>career[p.id] && (career[p.id].games>0 || career[p.id].inningsFielded>0))
+        .sort((a,b)=> career[b.id].games - career[a.id].games || a.name.localeCompare(b.name));
+      html += `<div class="card"><h2>Career Totals</h2>
+        <div class="note">This season plus everything carried over from earlier seasons. The Season Fairness numbers above start fresh each season so new players aren't judged "behind"; position history from here carries into the generator so players stay in spots they know.</div>
+        <table><tr><th style="text-align:left;">Player</th><th>Games</th><th>Innings Fielded</th><th>Innings Benched</th><th style="text-align:left;">Most-played positions</th></tr>`;
+      careerRows.forEach(p=>{
+        const s = career[p.id];
+        const top = Object.entries(s.positions).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([pos,n])=>`${esc(pos)} ${n}`).join(', ') || '\u2014';
+        html += `<tr><td class="name-cell">${esc(p.name)}${p.active?'':' <span class="badge bench">inactive</span>'}</td><td>${s.games}</td><td>${s.inningsFielded}</td><td>${s.inningsBenched}</td><td style="text-align:left;">${top}</td></tr>`;
+      });
+      html += `</table></div>`;
+    }
+    return html;
+  }
+
+  // ---------- Dropdowns on phones ----------
+  // Phone pickers can fire a change event at every stop of the wheel, not just the final choice. Acting
+  // on each one would run several actions (and several re-renders) for a single pick, so on touch devices
+  // the choice is applied once the wheel settles or the picker closes. Desktop applies it immediately.
+  const IS_TOUCH = (()=>{
+    try{
+      const ua = navigator.userAgent || '';
+      const ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      return ios || window.matchMedia('(pointer: coarse)').matches;
+    }catch(e){ return false; }
+  })();
+  function onSelectDone(el, handler){
+    if(!IS_TOUCH){ el.addEventListener('change', ()=> handler(el.value)); return; }
+    let timer = null;
+    const flush = ()=>{ if(timer){ clearTimeout(timer); timer = null; handler(el.value); } };
+    el.addEventListener('change', ()=>{ if(timer) clearTimeout(timer); timer = setTimeout(flush, 450); });
+    el.addEventListener('blur', flush);
+  }
+
+  function wireEvents(){
+    document.querySelectorAll('[data-tab]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const dest = btn.getAttribute('data-tab');
+        if(activeTab==='skills' && dest!=='skills') skillsRevealed = false;
+        activeTab = dest;
+        render();
+      });
+    });
+
+    const genBtn = document.getElementById('generateBtn');
+    if(genBtn) genBtn.addEventListener('click', ()=>{
+      const inp = document.getElementById('inningsInput');
+      const dateInp = document.getElementById('gameDateInput');
+      innings = Math.max(1, Math.min(12, parseInt(inp.value,10) || 6));
+      if(dateInp && dateInp.value && dateInp.value !== selectedGameDate) loadDateIntoEditor(dateInp.value);   // apply a date picked a moment ago first
+      saveConfig();
+      generateLineup();
+    });
+    const dateInp2 = document.getElementById('gameDateInput');
+    if(dateInp2) onSelectDone(dateInp2, value=>{
+      if(value === selectedGameDate) return;                                   // already there (e.g. Generate applied it)
+      if(!confirmDiscardUnsaved()){ render(); return; }   // don't silently throw away a lineup that isn't saved yet
+      loadDateIntoEditor(value);
+      render();
+    });
+    const syncLineupBtn = document.getElementById('syncLineupBtn');
+    if(syncLineupBtn) syncLineupBtn.addEventListener('click', ()=>{
+      const note = syncLineupToAvailability();
+      if(note) lastSaveMsg = note;
+      render();
+    });
+    const regenBtn = document.getElementById('regenBtn');
+    if(regenBtn) regenBtn.addEventListener('click', generateLineup);
+    const saveBtn = document.getElementById('saveBtn');
+    if(saveBtn) saveBtn.addEventListener('click', saveLineup);
+    const cancelBtn = document.getElementById('cancelWeekBtn');
+    if(cancelBtn) cancelBtn.addEventListener('click', startNewWeek);
+    const suggestBatBtn = document.getElementById('suggestBatBtn');
+    if(suggestBatBtn) suggestBatBtn.addEventListener('click', suggestBattingOrderBySkill);
+    const shareImgBtn = document.getElementById('shareImgBtn');
+    if(shareImgBtn) shareImgBtn.addEventListener('click', shareLineupImage);
+    document.querySelectorAll('[data-card-share]').forEach(btn=>{
+      btn.addEventListener('click', ()=> sharePlayerCard(btn.getAttribute('data-card-share')));
+    });
+    const exportImgBtn = document.getElementById('exportImgBtn');
+    if(exportImgBtn) exportImgBtn.addEventListener('click', exportLineupImage);
+    const copyTextBtn = document.getElementById('copyTextBtn');
+    if(copyTextBtn) copyTextBtn.addEventListener('click', copyLineupText);
+    const opponentInput = document.getElementById('opponentInput');
+    if(opponentInput) opponentInput.addEventListener('change', ()=>{
+      ensureGameDetails(selectedGameDate).opponent = opponentInput.value;
+      saveConfig();
+      render();
+    });
+    document.querySelectorAll('[data-never-bench-date]').forEach(box=>{
+      box.addEventListener('change', ()=> toggleNeverBenchForDate(selectedGameDate, box.getAttribute('data-never-bench-date')));
+    });
+    const teamNameInput = document.getElementById('teamName');
+    if(teamNameInput) teamNameInput.addEventListener('change', ()=>{
+      team.name = teamNameInput.value.trim().slice(0, 40);
+      teamMsg = '';
+      saveConfig();
+      render();
+    });
+    const teamLogoInput = document.getElementById('teamLogoInput');
+    if(teamLogoInput) teamLogoInput.addEventListener('change', async ()=>{
+      if(!(teamLogoInput.files && teamLogoInput.files[0])) return;
+      const previous = team.logo;
+      try{
+        team.logo = await processLogoFile(teamLogoInput.files[0]);
+        if(!saveConfig()){
+          team.logo = previous;
+          alert('That logo couldn\'t be saved \u2014 browser storage looks full. Try a smaller image.');
+          render();
+          return;
+        }
+        teamMsg = 'Logo saved. Use the button under Colors if you want the theme to match it.';
+        render();
+      }catch(err){
+        team.logo = previous;
+        alert('Could not use that image: ' + err.message);
+      }
+    });
+    const teamRemoveLogoBtn = document.getElementById('teamRemoveLogoBtn');
+    if(teamRemoveLogoBtn) teamRemoveLogoBtn.addEventListener('click', ()=>{ team.logo = null; teamMsg = 'Logo removed.'; saveConfig(); render(); });
+    [['teamPrimary','primary'],['teamAccent','accent']].forEach(([id,key])=>{
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.addEventListener('input', ()=>{ team[key] = el.value; applyTheme(); });     // live preview while dragging
+      el.addEventListener('change', ()=>{ team[key] = el.value; teamMsg = ''; saveConfig(); render(); });
+    });
+    const teamLogoColorsBtn = document.getElementById('teamLogoColorsBtn');
+    if(teamLogoColorsBtn) teamLogoColorsBtn.addEventListener('click', async ()=>{
+      const cols = await extractLogoColors(team.logo);
+      if(!cols){ teamMsg = 'Couldn\'t read any colors from that logo.'; render(); return; }
+      team.primary = cols.primary;
+      if(cols.accent) team.accent = cols.accent;
+      teamMsg = cols.accent ? 'Colors set from your logo.' : 'Main color set from your logo (it only has one prominent color, so the accent was left as it was).';
+      saveConfig();
+      render();
+    });
+    const teamResetColorsBtn = document.getElementById('teamResetColorsBtn');
+    if(teamResetColorsBtn) teamResetColorsBtn.addEventListener('click', ()=>{
+      team.primary = TEAM_DEFAULTS.primary; team.accent = TEAM_DEFAULTS.accent;
+      teamMsg = 'Colors reset.';
+      saveConfig();
+      render();
+    });
+    const seasonSelect = document.getElementById('seasonSelect');
+    if(seasonSelect) onSelectDone(seasonSelect, value=> switchSeason(value));
+    const goNewestBtn = document.getElementById('goNewestBtn');
+    if(goNewestBtn) goNewestBtn.addEventListener('click', ()=> switchSeason(seasonsMeta.list[seasonsMeta.list.length-1].id));
+    document.querySelectorAll('[data-season-switch]').forEach(btn=>{
+      btn.addEventListener('click', ()=> switchSeason(btn.getAttribute('data-season-switch')));
+    });
+    document.querySelectorAll('[data-season-delete]').forEach(btn=>{
+      btn.addEventListener('click', ()=> deleteSeason(btn.getAttribute('data-season-delete')));
+    });
+    document.querySelectorAll('[data-season-rename]').forEach(inp=>{
+      inp.addEventListener('change', ()=> renameSeason(inp.getAttribute('data-season-rename'), inp.value));
+    });
+    const nsOpenBtn = document.getElementById('nsOpenBtn');
+    if(nsOpenBtn) nsOpenBtn.addEventListener('click', ()=>{ openNewSeasonDraft(); render(); });
+    const nsCancelBtn = document.getElementById('nsCancelBtn');
+    if(nsCancelBtn) nsCancelBtn.addEventListener('click', ()=>{ newSeasonDraft = blankDraft(); render(); });
+    const nsCreateBtn = document.getElementById('nsCreateBtn');
+    if(nsCreateBtn) nsCreateBtn.addEventListener('click', ()=> createSeason(newSeasonDraft));
+    [['nsName','name'],['nsFirstDate','firstDate'],['nsNumGames','numGames'],['nsNewPlayers','newPlayers']].forEach(([id,key])=>{
+      const el = document.getElementById(id);
+      if(el) el.addEventListener('input', ()=>{ newSeasonDraft[key] = el.value; });
+    });
+    [['nsCarryRatings','carryRatings'],['nsCarryStats','carryStats'],['nsCarryCore','carryCore']].forEach(([id,key])=>{
+      const el = document.getElementById(id);
+      if(el) el.addEventListener('change', ()=>{ newSeasonDraft[key] = el.checked; });
+    });
+    document.querySelectorAll('[data-ns-returning]').forEach(box=>{
+      box.addEventListener('change', ()=>{ newSeasonDraft.returning[box.getAttribute('data-ns-returning')] = box.checked; });
+    });
+    document.querySelectorAll('[data-core-player]').forEach(box=>{
+      box.addEventListener('change', ()=>{
+        const id = box.getAttribute('data-core-player');
+        if(box.checked) coreGroup[id] = true; else delete coreGroup[id];
+        saveConfig();
+        render();
+      });
+    });
+    const mapUploadInput = document.getElementById('mapUploadInput');
+    if(mapUploadInput) mapUploadInput.addEventListener('change', async ()=>{
+      if(mapUploadInput.files && mapUploadInput.files[0]){
+        try{
+          const dataUrl = await downscaleImageFile(mapUploadInput.files[0], 900);
+          ensureGameDetails(selectedGameDate).mapImage = dataUrl;
+          saveConfig();
+          render();
+        }catch(err){
+          alert('Could not use that image: ' + err.message);
+        }
+      }
+    });
+    const removeMapBtn = document.getElementById('removeMapBtn');
+    if(removeMapBtn) removeMapBtn.addEventListener('click', ()=>{
+      ensureGameDetails(selectedGameDate).mapImage = null;
+      saveConfig();
+      render();
+    });
+    document.querySelectorAll('[data-load-week]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{ loadDateIntoEditor(btn.getAttribute('data-load-week')); render(); });
+    });
+
+    document.querySelectorAll('select[data-cell-player]').forEach(sel=>{
+      const pid = sel.getAttribute('data-cell-player'), inn = parseInt(sel.getAttribute('data-cell-inning'), 10);
+      if(!IS_TOUCH){ sel.addEventListener('change', ()=> setPlayerAssignment(pid, inn, sel.value)); return; }
+      let base = null, timer = null;
+      const begin = ()=>{ if(base === null) base = JSON.stringify(currentGrid[inn].positions); };
+      const finish = ()=>{ if(timer){ clearTimeout(timer); timer = null; } if(base !== null){ base = null; render(); } };
+      sel.addEventListener('focus', begin);
+      sel.addEventListener('change', ()=>{
+        begin();
+        currentGrid[inn].positions = JSON.parse(base);                 // start again from before the picker opened...
+        setPlayerAssignment(pid, inn, sel.value, {render: false});     // ...and apply only the current choice
+        if(timer) clearTimeout(timer);
+        timer = setTimeout(finish, 600);                                // redraw once the wheel settles
+      });
+      sel.addEventListener('blur', finish);
+    });
+    document.querySelectorAll('[data-bat-up]').forEach(btn=>{
+      btn.addEventListener('click', ()=> moveBattingOrder(parseInt(btn.getAttribute('data-bat-up'),10), -1));
+    });
+    document.querySelectorAll('[data-bat-down]').forEach(btn=>{
+      btn.addEventListener('click', ()=> moveBattingOrder(parseInt(btn.getAttribute('data-bat-down'),10), 1));
+    });
+
+    const addPlayerBtn = document.getElementById('addPlayerBtn');
+    if(addPlayerBtn) addPlayerBtn.addEventListener('click', ()=>{
+      const inp = document.getElementById('newPlayerName');
+      addPlayer(inp.value);
+      inp.value='';
+    });
+    const newNameInput = document.getElementById('newPlayerName');
+    if(newNameInput) newNameInput.addEventListener('keydown', (e)=>{
+      if(e.key==='Enter'){ addPlayer(newNameInput.value); newNameInput.value=''; }
+    });
+    document.querySelectorAll('[data-toggle]').forEach(btn=>{
+      btn.addEventListener('click', ()=> toggleActive(btn.getAttribute('data-toggle')));
+    });
+    document.querySelectorAll('[data-remove]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        if(confirm('Remove this player and their stats? This cannot be undone.')) removePlayer(btn.getAttribute('data-remove'));
+      });
+    });
+    document.querySelectorAll('[data-rename]').forEach(inp=>{
+      inp.addEventListener('change', ()=> renamePlayer(inp.getAttribute('data-rename'), inp.value));
+    });
+    document.querySelectorAll('[data-position]').forEach(inp=>{
+      inp.addEventListener('change', ()=>{
+        const idx = parseInt(inp.getAttribute('data-position'),10);
+        positions[idx] = inp.value.trim() || positions[idx];
+        saveConfig();
+        render();
+      });
+    });
+    const addPosBtn = document.getElementById('addPositionBtn');
+    if(addPosBtn) addPosBtn.addEventListener('click', ()=>{
+      positions.push('New Position');
+      saveConfig();
+      render();
+    });
+
+    const exportBackupBtn = document.getElementById('exportBackupBtn');
+    if(exportBackupBtn) exportBackupBtn.addEventListener('click', exportBackup);
+    const importBackupInput = document.getElementById('importBackupInput');
+    if(importBackupInput) importBackupInput.addEventListener('change', ()=>{
+      if(importBackupInput.files && importBackupInput.files[0]){
+        if(confirm('Import this backup? A backup from this version replaces ALL seasons in this browser; an older single-season backup replaces only the current season (' + currentSeason().name + '). Continue?')){
+          importBackupFile(importBackupInput.files[0]);
+        }
+      }
+    });
+
+    const revealBtn = document.getElementById('revealSkillsBtn');
+    if(revealBtn) revealBtn.addEventListener('click', ()=>{ skillsRevealed = true; render(); });
+    const hideBtn = document.getElementById('hideSkillsBtn');
+    if(hideBtn) hideBtn.addEventListener('click', ()=>{ skillsRevealed = false; render(); });
+    document.querySelectorAll('[data-rank-player]').forEach(sel=>{
+      onSelectDone(sel, value=>{
+        const pid = sel.getAttribute('data-rank-player');
+        const rank = parseInt(sel.getAttribute('data-rank'),10);
+        setPreferenceRank(pid, rank, value);
+      });
+    });
+    document.querySelectorAll('[data-exclude-player]').forEach(box=>{
+      box.addEventListener('change', ()=>{
+        setExcluded(box.getAttribute('data-exclude-player'), box.getAttribute('data-exclude-pos'), box.checked);
+      });
+    });
+    document.querySelectorAll('[data-genskill-player]').forEach(sel=>{
+      sel.addEventListener('change', ()=>{
+        const pid = sel.getAttribute('data-genskill-player');
+        const name = sel.getAttribute('data-genskill-name');
+        if(!generalSkills[pid]) generalSkills[pid] = {};
+        generalSkills[pid][name] = parseInt(sel.value,10);
+        saveConfig();
+      });
+    });
+    const addDateBtn = document.getElementById('addDateBtn');
+    if(addDateBtn) addDateBtn.addEventListener('click', ()=>{
+      const inp = document.getElementById('addDateInput');
+      if(inp.value && !scheduleDates.includes(inp.value)){
+        scheduleDates.push(inp.value);
+        scheduleDates.sort();
+        saveConfig();
+        render();
+      }
+    });
+    document.querySelectorAll('[data-remove-date]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const d = btn.getAttribute('data-remove-date');
+        if(confirm(`Remove ${fmtDate(d)} from the schedule? Attendance marks for that date will be lost.`)){
+          scheduleDates = scheduleDates.filter(x=>x!==d);
+          delete attendance[d];
+          if(selectedGameDate === d) selectedGameDate = nextUnplayedDate();
+          saveConfig();
+          render();
+        }
+      });
+    });
+    document.querySelectorAll('[data-schedule-opponent]').forEach(inp=>{
+      inp.addEventListener('change', ()=>{
+        const d = inp.getAttribute('data-schedule-opponent');
+        ensureGameDetails(d).opponent = inp.value;
+        saveConfig();
+      });
+    });
+    document.querySelectorAll('[data-schedule-time]').forEach(inp=>{
+      inp.addEventListener('change', ()=>{
+        ensureGameDetails(inp.getAttribute('data-schedule-time')).time = inp.value;
+        saveConfig();
+      });
+    });
+    document.querySelectorAll('[data-schedule-field]').forEach(inp=>{
+      inp.addEventListener('change', ()=>{
+        ensureGameDetails(inp.getAttribute('data-schedule-field')).field = inp.value;
+        saveConfig();
+      });
+    });
+    const scoreVal = inp => inp.value === '' ? null : Number(inp.value);
+    document.querySelectorAll('[data-schedule-our]').forEach(inp=>{
+      inp.addEventListener('change', ()=>{
+        ensureGameDetails(inp.getAttribute('data-schedule-our')).ourScore = scoreVal(inp);
+        saveConfig();
+        render();
+      });
+    });
+    document.querySelectorAll('[data-schedule-their]').forEach(inp=>{
+      inp.addEventListener('change', ()=>{
+        ensureGameDetails(inp.getAttribute('data-schedule-their')).theirScore = scoreVal(inp);
+        saveConfig();
+        render();
+      });
+    });
+    document.querySelectorAll('[data-schedule-played]').forEach(box=>{
+      box.addEventListener('change', ()=> setGamePlayed(box.getAttribute('data-schedule-played'), box.checked));
+    });
+    document.querySelectorAll('[data-att-player]').forEach(box=>{
+      box.addEventListener('change', ()=>{
+        const pid = box.getAttribute('data-att-player');
+        const d = box.getAttribute('data-att-date');
+        if(!attendance[d]) attendance[d] = {};
+        if(box.checked) attendance[d][pid] = true;
+        else delete attendance[d][pid];
+        saveConfig();
+      });
+    });
+
+    document.querySelectorAll('[data-card-photo]').forEach(inp=>{
+      inp.addEventListener('change', async ()=>{
+        const pid = inp.getAttribute('data-card-photo');
+        if(inp.files && inp.files[0]){
+          try{
+            const dataUrl = await downscaleImageFile(inp.files[0], 700);
+            ensurePlayerCard(pid).photo = dataUrl;
+            saveConfig();
+            render();
+          }catch(err){
+            alert('Could not use that image: ' + err.message);
+          }
+        }
+      });
+    });
+    document.querySelectorAll('[data-card-remove-photo]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        ensurePlayerCard(btn.getAttribute('data-card-remove-photo')).photo = null;
+        saveConfig();
+        render();
+      });
+    });
+    document.querySelectorAll('[data-card-tagline]').forEach(inp=>{
+      inp.addEventListener('change', ()=>{
+        ensurePlayerCard(inp.getAttribute('data-card-tagline')).tagline = inp.value;
+        saveConfig();
+      });
+    });
+    document.querySelectorAll('[data-card-download]').forEach(btn=>{
+      btn.addEventListener('click', ()=> downloadPlayerCard(btn.getAttribute('data-card-download')));
+    });
+  }
+
+  loadState();
+})();
+</script>
