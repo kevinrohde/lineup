@@ -3,7 +3,7 @@
 <meta name="theme-color" content="#2F6B45">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Weekly Lineup</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
@@ -425,10 +425,12 @@
     weekLog.forEach(w=>{
       if(!isGamePlayed(w.gameDate)) return;
       const activeIds = w.activeIds || [];
+      const activeSet = new Set(activeIds);
       const assignedPerInning = w.grid.map(inning => new Set(Object.values(inning.positions)));
       activeIds.forEach(id=> ensure(id).games += 1);
       w.grid.forEach((inning, idx)=>{
         Object.entries(inning.positions).forEach(([pos, id])=>{
+          if(!activeSet.has(id)) return;   // lineups saved before this fix could hold someone who was out; they didn't play
           const st = ensure(id);
           st.inningsFielded += 1;
           st.positions[pos] = (st.positions[pos]||0) + 1;
@@ -1079,6 +1081,66 @@
     render();
   }
 
+  // ---------- Keeping the lineup in step with who's actually available ----------
+  function lineupDrift(){
+    // Players the lineup refers to who are no longer available (marked absent, set inactive, or
+    // removed), and available players the lineup has never heard of (added, or back from an absence).
+    if(!currentGrid) return null;
+    const avail = new Set(activePlayersForDate(selectedGameDate).map(p=>p.id));
+    const used = new Set(currentBattingOrder);
+    currentGrid.forEach(inn=> Object.values(inn.positions).forEach(id=> used.add(id)));
+    const out = [...used].filter(id=> !avail.has(id));
+    const inOrder = new Set(currentBattingOrder);
+    const added = [...avail].filter(id=> !inOrder.has(id));   // everyone available kicks, so anyone missing from the order is new to this lineup
+    return (out.length || added.length) ? {out, added} : null;
+  }
+  function lineupGhostIds(){
+    const d = lineupDrift();
+    return d ? d.out : [];
+  }
+  function syncLineupToAvailability(){
+    // Takes players who are out off the field and out of the batting order, refills the spots they
+    // left from the bench (best fit that isn't blocked from the position), and adds anyone new to
+    // the batting order. Spots nobody can fill stay empty and are flagged. Returns a message, or
+    // null when the lineup was already in step.
+    const drift = lineupDrift();
+    if(!drift) return null;
+    const avail = activePlayersForDate(selectedGameDate);
+    const availIds = new Set(avail.map(p=>p.id));
+    let refilled = 0, stillEmpty = 0, restored = [];
+    // A lineup made when few players were available drops positions; if more players are available now, bring them back.
+    const wanted = Math.min(positions.length, avail.length);
+    if(wanted > currentPosList.length){
+      restored = positions.filter(p=> !currentPosList.includes(p)).slice(0, wanted - currentPosList.length);
+      currentPosList = positions.filter(p=> currentPosList.includes(p) || restored.includes(p));
+    }
+    currentGrid.forEach(inn=>{
+      const pm = inn.positions;
+      const vacatedNow = restored.slice();
+      currentPosList.forEach(pos=>{ if(pm[pos] && !availIds.has(pm[pos])){ delete pm[pos]; vacatedNow.push(pos); } });
+      const assigned = new Set(Object.values(pm));
+      vacatedNow.forEach(pos=>{
+        const cands = avail.filter(p=> !assigned.has(p.id) && !isExcluded(p.id, pos));
+        if(!cands.length){ stillEmpty++; return; }
+        cands.sort((a,b)=> combinedScore(b.id,pos) - combinedScore(a.id,pos) || a.name.localeCompare(b.name));
+        pm[pos] = cands[0].id;
+        assigned.add(cands[0].id);
+        refilled++;
+      });
+    });
+    const order = currentBattingOrder.filter(id=> availIds.has(id));
+    avail.forEach(p=>{ if(!order.includes(p.id)) order.push(p.id); });
+    currentBattingOrder = order;
+    const parts = [];
+    if(drift.out.length) parts.push(drift.out.map(playerName).join(', ') + ' taken out');
+    if(drift.added.length) parts.push(drift.added.map(playerName).join(', ') + ' added');
+    if(restored.length) parts.push(restored.join(', ') + ' put back on the field');
+    return `Lineup updated for who's available now \u2014 ${parts.join('; ')}.` +
+      (refilled ? ` ${refilled} spot${refilled!==1?'s':''} refilled from the bench.` : '') +
+      (stillEmpty ? ` ${stillEmpty} spot${stillEmpty!==1?'s':''} couldn't be filled and are marked empty.` : '') +
+      (drift.added.length ? ' New players start on the bench \u2014 tap Regenerate for a fully balanced lineup.' : '');
+  }
+
   function benchForInning(inningIdx){
     const active = activePlayersForDate(selectedGameDate).map(p=>p.id);
     const assigned = Object.values(currentGrid[inningIdx].positions);
@@ -1138,11 +1200,12 @@
     RF: [0.86, 0.20]
   };
 
-  function setPlayerAssignment(playerId, inningIdx, newValue){
+  function setPlayerAssignment(playerId, inningIdx, newValue, opts){
     // Moving a player to a position someone else holds is a SWAP: the other player takes
     // the mover's old spot (or goes to the bench if the mover was benched). Setting a
     // fielder to Bench leaves their position vacant \u2014 there's no way to know who should
     // replace them, so it's flagged in red rather than silently refilled.
+    if(!playerId || !currentGrid || !currentGrid[inningIdx]) return;   // nothing to move (e.g. every player is marked out)
     const posMap = currentGrid[inningIdx].positions;
     const oldPos = assignmentFor(playerId, inningIdx); // a position name, or 'Bench'
     if(newValue === oldPos) return;
@@ -1158,7 +1221,7 @@
       }
       // if the mover was benched, the displaced occupant simply ends up on the bench
     }
-    render();
+    if(!opts || opts.render !== false) render();
   }
 
   function vacantPositionsForInning(inningIdx){
@@ -1259,7 +1322,12 @@
     return lines.join('\n');
   }
 
+  function syncBeforeShare(){
+    const note = syncLineupToAvailability();
+    if(note){ lastSaveMsg = note; render(); }
+  }
   async function copyLineupText(){
+    syncBeforeShare();
     try{
       await navigator.clipboard.writeText(buildLineupText());
       lastSaveMsg = 'Lineup copied to clipboard \u2014 paste it into a text or email.';
@@ -1440,10 +1508,12 @@
   }
   const lineupFileName = ()=> `lineup-${selectedGameDate || 'draft'}.jpg`;
   async function exportLineupImage(){
+    syncBeforeShare();
     const blob = await buildLineupBlob();
     if(blob) saveBlob(blob, lineupFileName());
   }
   async function shareLineupImage(){
+    syncBeforeShare();
     const blob = await buildLineupBlob();
     if(blob) await shareBlob(blob, lineupFileName(), (team.name ? team.name + ' \u2014 ' : '') + 'Lineup ' + (fmtDate(selectedGameDate) || ''));
   }
@@ -1585,6 +1655,7 @@
 
   async function saveLineup(){
     if(!currentGrid) return;
+    const syncNote = syncLineupToAvailability();   // a saved lineup must only contain players who were actually there
     const active = activePlayersForDate(selectedGameDate);
     const weekNum = scheduleDates.indexOf(selectedGameDate) + 1;
     const label = (weekNum > 0 ? `Week ${weekNum}` : 'Lineup') + (selectedGameDate ? ' \u2014 ' + fmtDate(selectedGameDate) : '');
@@ -1607,7 +1678,7 @@
     const vacancyNote = vacancies.length
       ? ' Heads up \u2014 saved with empty positions: ' + vacancies.map(v=>`inning ${v.inning} (${v.positions.join(', ')})`).join('; ') + '.'
       : '';
-    lastSaveMsg = `${label} saved.` + (isGamePlayed(selectedGameDate) ? ' (This game is marked played \u2014 stats already reflect it.)' : ' Tick Played in the Attendance tab Schedule once the game happens to fold it into season stats.') + vacancyNote;
+    lastSaveMsg = `${label} saved.` + (isGamePlayed(selectedGameDate) ? ' (This game is marked played \u2014 stats already reflect it.)' : ' Tick Played in the Attendance tab Schedule once the game happens to fold it into season stats.') + vacancyNote + (syncNote ? ' (' + syncNote + ')' : '');
     await saveConfig();
     await saveProgress();
     render();
@@ -1987,6 +2058,14 @@
     html += `</div></div>`;
 
     if(currentGrid){
+      const drift = lineupDrift();
+      if(drift){
+        const bits = [];
+        if(drift.out.length) bits.push(`${esc(drift.out.map(playerName).join(', '))} ${drift.out.length>1?'are':'is'} out now`);
+        if(drift.added.length) bits.push(`${esc(drift.added.map(playerName).join(', '))} ${drift.added.length>1?'are':'is'} available but not in this lineup`);
+        html += `<div class="warn"><b>This lineup is out of step with who's available:</b> ${bits.join('; ')}.
+          <div class="row" style="margin-top:8px;"><button class="small" id="syncLineupBtn">Update lineup</button><span style="font-size:11px;">or tap Regenerate above for a fresh, balanced one.</span></div></div>`;
+      }
       html += `<div class="card"><h2>Batting Order</h2>
         <div class="row" style="margin-bottom:12px;"><button class="ghost" id="suggestBatBtn">Suggest by Skill</button></div>
         <div class="note" style="margin-top:0;">Everyone kicks, in this order, regardless of who's benched in the field that inning.</div>
@@ -1994,7 +2073,7 @@
       currentBattingOrder.forEach((id, idx)=>{
         html += `<li>
           <span class="num">${idx+1}.</span>
-          <span class="bname">${esc(playerName(id))}</span>
+          <span class="bname">${esc(playerName(id))}${lineupGhostIds().includes(id) ? ' <span class="badge bench">out</span>' : ''}</span>
           <button class="small ghost" data-bat-up="${idx}" ${idx===0?'disabled':''}>&uarr;</button>
           <button class="small ghost" data-bat-down="${idx}" ${idx===currentBattingOrder.length-1?'disabled':''}>&darr;</button>
         </li>`;
@@ -2018,8 +2097,9 @@
         html += `<th${hasVacancy?' style="background:var(--ball);color:var(--on-ball);"':''}>Inning ${i+1}</th>`;
       }
       html += `</tr>`;
-      active.forEach(p=>{
-        html += `<tr><td class="name-cell">${esc(p.name)}</td>`;
+      const chartPlayers = lineupGhostIds().map(id=>({id, name: playerName(id), ghost: true})).concat(active);
+      chartPlayers.forEach(p=>{
+        html += `<tr><td class="name-cell">${esc(p.name)}${p.ghost ? ' <span class="badge bench">out</span>' : ''}</td>`;
         for(let i=0;i<chartInnings;i++){
           const current = assignmentFor(p.id, i);
           const posMap = currentGrid[i].positions;
@@ -2110,7 +2190,7 @@
       <div class="row">
         <button class="primary" id="exportBackupBtn">Download Backup</button>
         <label class="ghost" style="display:inline-flex;align-items:center;padding:9px 16px;border-radius:4px;border:1px solid var(--field);cursor:pointer;font-family:'Oswald',sans-serif;font-weight:600;font-size:12px;text-transform:uppercase;color:var(--field-dark);">
-          Import Backup<input type="file" id="importBackupInput" accept="application/json" style="display:none;">
+          Import Backup<input type="file" id="importBackupInput" accept=".json,application/json,text/json,text/plain" style="display:none;">
         </label>
       </div>
       <div class="note" style="margin-top:10px;">Download Backup includes every season. Importing a backup made by this version replaces ALL seasons in this browser. Importing an older single-season backup replaces only the season you're currently in and leaves the others alone. Worth downloading a fresh backup first if you're not sure.</div>
@@ -2614,6 +2694,25 @@
     return html;
   }
 
+  // ---------- Dropdowns on phones ----------
+  // Phone pickers can fire a change event at every stop of the wheel, not just the final choice. Acting
+  // on each one would run several actions (and several re-renders) for a single pick, so on touch devices
+  // the choice is applied once the wheel settles or the picker closes. Desktop applies it immediately.
+  const IS_TOUCH = (()=>{
+    try{
+      const ua = navigator.userAgent || '';
+      const ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      return ios || window.matchMedia('(pointer: coarse)').matches;
+    }catch(e){ return false; }
+  })();
+  function onSelectDone(el, handler){
+    if(!IS_TOUCH){ el.addEventListener('change', ()=> handler(el.value)); return; }
+    let timer = null;
+    const flush = ()=>{ if(timer){ clearTimeout(timer); timer = null; handler(el.value); } };
+    el.addEventListener('change', ()=>{ if(timer) clearTimeout(timer); timer = setTimeout(flush, 450); });
+    el.addEventListener('blur', flush);
+  }
+
   function wireEvents(){
     document.querySelectorAll('[data-tab]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
@@ -2629,12 +2728,23 @@
       const inp = document.getElementById('inningsInput');
       const dateInp = document.getElementById('gameDateInput');
       innings = Math.max(1, Math.min(12, parseInt(inp.value,10) || 6));
-      if(dateInp && dateInp.value) selectedGameDate = dateInp.value;
+      if(dateInp && dateInp.value && dateInp.value !== selectedGameDate) loadDateIntoEditor(dateInp.value);   // apply a date picked a moment ago first
       saveConfig();
       generateLineup();
     });
     const dateInp2 = document.getElementById('gameDateInput');
-    if(dateInp2) dateInp2.addEventListener('change', ()=>{ loadDateIntoEditor(dateInp2.value); render(); });
+    if(dateInp2) onSelectDone(dateInp2, value=>{
+      if(value === selectedGameDate) return;                                   // already there (e.g. Generate applied it)
+      if(!confirmDiscardUnsaved()){ render(); return; }   // don't silently throw away a lineup that isn't saved yet
+      loadDateIntoEditor(value);
+      render();
+    });
+    const syncLineupBtn = document.getElementById('syncLineupBtn');
+    if(syncLineupBtn) syncLineupBtn.addEventListener('click', ()=>{
+      const note = syncLineupToAvailability();
+      if(note) lastSaveMsg = note;
+      render();
+    });
     const regenBtn = document.getElementById('regenBtn');
     if(regenBtn) regenBtn.addEventListener('click', generateLineup);
     const saveBtn = document.getElementById('saveBtn');
@@ -2713,7 +2823,7 @@
       render();
     });
     const seasonSelect = document.getElementById('seasonSelect');
-    if(seasonSelect) seasonSelect.addEventListener('change', ()=> switchSeason(seasonSelect.value));
+    if(seasonSelect) onSelectDone(seasonSelect, value=> switchSeason(value));
     const goNewestBtn = document.getElementById('goNewestBtn');
     if(goNewestBtn) goNewestBtn.addEventListener('click', ()=> switchSeason(seasonsMeta.list[seasonsMeta.list.length-1].id));
     document.querySelectorAll('[data-season-switch]').forEach(btn=>{
@@ -2774,9 +2884,20 @@
     });
 
     document.querySelectorAll('select[data-cell-player]').forEach(sel=>{
+      const pid = sel.getAttribute('data-cell-player'), inn = parseInt(sel.getAttribute('data-cell-inning'), 10);
+      if(!IS_TOUCH){ sel.addEventListener('change', ()=> setPlayerAssignment(pid, inn, sel.value)); return; }
+      let base = null, timer = null;
+      const begin = ()=>{ if(base === null) base = JSON.stringify(currentGrid[inn].positions); };
+      const finish = ()=>{ if(timer){ clearTimeout(timer); timer = null; } if(base !== null){ base = null; render(); } };
+      sel.addEventListener('focus', begin);
       sel.addEventListener('change', ()=>{
-        setPlayerAssignment(sel.getAttribute('data-cell-player'), parseInt(sel.getAttribute('data-cell-inning'),10), sel.value);
+        begin();
+        currentGrid[inn].positions = JSON.parse(base);                 // start again from before the picker opened...
+        setPlayerAssignment(pid, inn, sel.value, {render: false});     // ...and apply only the current choice
+        if(timer) clearTimeout(timer);
+        timer = setTimeout(finish, 600);                                // redraw once the wheel settles
       });
+      sel.addEventListener('blur', finish);
     });
     document.querySelectorAll('[data-bat-up]').forEach(btn=>{
       btn.addEventListener('click', ()=> moveBattingOrder(parseInt(btn.getAttribute('data-bat-up'),10), -1));
@@ -2837,10 +2958,10 @@
     const hideBtn = document.getElementById('hideSkillsBtn');
     if(hideBtn) hideBtn.addEventListener('click', ()=>{ skillsRevealed = false; render(); });
     document.querySelectorAll('[data-rank-player]').forEach(sel=>{
-      sel.addEventListener('change', ()=>{
+      onSelectDone(sel, value=>{
         const pid = sel.getAttribute('data-rank-player');
         const rank = parseInt(sel.getAttribute('data-rank'),10);
-        setPreferenceRank(pid, rank, sel.value);
+        setPreferenceRank(pid, rank, value);
       });
     });
     document.querySelectorAll('[data-exclude-player]').forEach(box=>{
